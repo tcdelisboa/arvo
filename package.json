@@ -6,21 +6,44 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint src tests",
+    "test": "vitest run",
+    "e2e": "./scripts/run-e2e.sh",
+    "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "@electric-sql/pglite": "^0.5.16",
+    "@fontsource-variable/newsreader": "^5.3.0",
+    "@fontsource-variable/schibsted-grotesk": "^5.3.0",
+    "exceljs": "^4.4.0",
+    "lucide-react": "^1.71.0",
     "next": "16.4.6",
+    "papaparse": "^5.7.0",
+    "plaid": "^51.0.0",
+    "postgres": "^4.1.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "react-plaid-link": "^5.0.0",
+    "server-only": "^0.0.1",
+    "yahoo-finance2": "^4.0.6",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
-    "@types/node": "^20",
+    "@types/node": "^22.20.5",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "puppeteer-core": "^25.17.0",
     "tailwindcss": "4.3.3",
-    "typescript": "^5"
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=20.9"
   }
 }

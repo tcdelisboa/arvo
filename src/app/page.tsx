@@ -1,69 +1,258 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Check, X } from "lucide-react";
+import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { ButtonLink } from "@/components/ui";
+import { GrowthExplorer } from "@/components/growth-explorer";
+import { Rings } from "@/components/rings";
 
-export default function Home() {
+/* Small, static previews of the real screens. No screenshots, so they follow the theme. */
+
+function SpendingPreview() {
+  const rows: [string, string, number][] = [
+    ["Rent & housing", "€890", 100],
+    ["Groceries", "€412", 46],
+    ["Eating out", "€268", 30],
+    ["Subscriptions", "€86", 10],
+  ];
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="rounded-panel border border-line bg-surface p-5">
+      <p className="text-[12.5px] text-ink-3">Spent in a typical month</p>
+      <p className="figure mb-4 mt-0.5 text-[30px] leading-none text-ink">{"€"}2,034</p>
+      <ul className="space-y-3">
+        {rows.map(([label, amount, width]) => (
+          <li key={label}>
+            <div className="flex justify-between text-[13px]">
+              <span className="text-ink">{label}</span>
+              <span className="tnum text-ink-2">{amount}</span>
+            </div>
+            <div className="mt-1 h-1.5 rounded-full bg-sunken">
+              <div className="h-full rounded-full" style={{ width: `${width}%`, background: "var(--s1)" }} />
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 rounded-control bg-brand-soft px-3 py-2 text-[12.5px] text-brand-ink">
+        Six subscriptions cost you {"€"}1,032 a year. Two of them overlap.
+      </p>
+    </div>
+  );
+}
+
+function ProfilePreview() {
+  return (
+    <div className="rounded-panel border border-line bg-surface p-5">
+      <p className="text-[12.5px] text-ink-3">Your investor profile</p>
+      <p className="display mt-0.5 text-[34px] text-ink">Balanced</p>
+      <div className="mt-3 flex gap-1.5">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <span key={n} className={`h-1.5 flex-1 rounded-full ${n <= 3 ? "bg-brand" : "bg-line-strong"}`} />
+        ))}
+      </div>
+      <p className="mt-4 text-[13px] leading-relaxed text-ink-2">
+        You accept ups and downs in exchange for growth. Stocks lead, bonds steady the ride.
+      </p>
+      <p className="mt-4 text-[12.5px] text-ink-3">Arvo suggests investing</p>
+      <p className="figure mt-0.5 text-[24px] leading-none text-ink">{"€"}250 <span className="font-sans text-[13px] font-normal text-ink-3">a month</span></p>
+    </div>
+  );
+}
+
+function PlanPreview() {
+  const rows: [string, string, string, string][] = [
+    ["Global stocks", "VWCE", "60%", "var(--s1)"],
+    ["Global bonds", "EUNA", "28%", "var(--s6)"],
+    ["Gold", "4GLD", "7%", "var(--s2)"],
+    ["Cash-like", "XEON", "5%", "var(--s4)"],
+  ];
+  return (
+    <div className="rounded-panel border border-line bg-surface p-5">
+      <p className="text-[12.5px] text-ink-3">Where to put it</p>
+      <div className="mb-4 mt-2 flex h-2.5 gap-[2px] overflow-hidden rounded-full">
+        <span style={{ width: "60%", background: "var(--s1)" }} />
+        <span style={{ width: "7%", background: "var(--s2)" }} />
+        <span style={{ width: "5%", background: "var(--s4)" }} />
+        <span style={{ width: "28%", background: "var(--s6)" }} />
+      </div>
+      <ul className="divide-y divide-line">
+        {rows.map(([name, ticker, weight, color]) => (
+          <li key={ticker} className="flex items-center justify-between gap-3 py-2.5">
+            <span className="flex items-center gap-2.5 text-[13.5px] text-ink">
+              <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: color }} />
+              {name}
+              <span className="rounded-full bg-sunken px-2 py-0.5 text-[11.5px] text-ink-2">{ticker}</span>
+            </span>
+            <span className="figure text-[19px] text-ink">{weight}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+const STEPS = [
+  {
+    title: "See where your money goes",
+    body: "Connect your bank or upload a statement. Arvo sorts every transaction, shows your biggest costs, and points out where you could save without changing how you live.",
+    preview: <SpendingPreview />,
+  },
+  {
+    title: "Find your investor profile",
+    body: "Ten plain questions about your situation and your nerves. Arvo works out how much risk you can carry and how much you can afford to invest each month, and explains both.",
+    preview: <ProfilePreview />,
+  },
+  {
+    title: "Follow a plan that fits",
+    body: "A diversified portfolio of low-cost funds with the exact share for each, what each one is, and why it is there. Use it with whichever broker you like.",
+    preview: <PlanPreview />,
+  },
+];
+
+const IS = [
+  "A clear, honest picture of your spending",
+  "An investor profile based on your real situation",
+  "A model portfolio with the exact share for each fund",
+  "Plain-language explanations of any share or fund, and how it fits you",
+];
+
+const IS_NOT = [
+  "A bank or a broker. Arvo can read transactions; it can never move money",
+  "A tip sheet. No hot picks, no price predictions",
+  "Personal financial advice from a licensed adviser",
+  "A business that sells your data. You can delete everything in one tap",
+];
+
+export default function LandingPage() {
+  return (
+    <div className="overflow-x-clip">
+      <header className="mx-auto flex h-[72px] w-full max-w-[1180px] items-center justify-between px-5 sm:px-8">
+        <Link href="/" aria-label="Arvo home">
+          <Logo />
+        </Link>
+        <nav aria-label="Site" className="flex items-center gap-1 sm:gap-2">
+          <Link href="#how" className="hidden h-10 items-center rounded-control px-3 text-[14.5px] text-ink-2 hover:text-ink md:inline-flex">
+            How it works
+          </Link>
+          <Link href="#honest" className="hidden h-10 items-center rounded-control px-3 text-[14.5px] text-ink-2 hover:text-ink md:inline-flex">
+            What Arvo is
+          </Link>
+          <ThemeToggle />
+          <Link href="/login" className="inline-flex h-10 items-center rounded-control px-3 text-[14.5px] font-medium text-ink hover:bg-sunken">
+            Sign in
+          </Link>
+          <ButtonLink href="/signup" size="sm" className="hidden h-10 sm:inline-flex">
+            Create account
+          </ButtonLink>
+        </nav>
+      </header>
+
+      <main>
+        <section className="relative mx-auto grid w-full max-w-[1180px] items-center gap-12 px-5 pb-20 pt-10 sm:px-8 sm:pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:gap-16 lg:pb-28">
+          <div className="settle">
+            <h1 className="display text-[52px] text-ink sm:text-[72px] lg:text-[84px]">
+              Start investing with what you have.
+            </h1>
+            <p className="mt-6 max-w-[34rem] text-[17px] leading-relaxed text-ink-2 sm:text-[19px]">
+              Arvo shows where your money goes, works out what you can afford to set aside, and turns it into a portfolio
+              that fits you. In plain language, from the first euro.
+            </p>
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <ButtonLink href="/signup" size="lg">Create your free account</ButtonLink>
+              <ButtonLink href="/login" size="lg" variant="ghost">Sign in</ButtonLink>
+            </div>
+            <p className="mt-5 text-[13.5px] text-ink-3">Free during early access. No card, and nothing to install.</p>
+          </div>
+          <div className="settle [animation-delay:90ms]">
+            <GrowthExplorer />
+          </div>
+        </section>
+
+        <section id="how" className="scroll-mt-8 border-t border-line bg-surface">
+          <div className="mx-auto w-full max-w-[1180px] px-5 py-20 sm:px-8 lg:py-28">
+            <h2 className="display max-w-2xl text-[38px] text-ink sm:text-[52px]">From your bank statement to a plan, in three steps</h2>
+            <ol className="mt-14 space-y-16 lg:space-y-20">
+              {STEPS.map((step, index) => (
+                <li key={step.title} className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-20">
+                  <div className="flex gap-5 sm:gap-7">
+                    <span className="figure text-[44px] leading-none text-ink-3 sm:text-[56px]">{index + 1}</span>
+                    <div>
+                      <h3 className="display text-[28px] text-ink sm:text-[34px]">{step.title}</h3>
+                      <p className="mt-3 max-w-[32rem] text-[16px] leading-relaxed text-ink-2">{step.body}</p>
+                    </div>
+                  </div>
+                  <div className="lg:justify-self-end lg:w-full">{step.preview}</div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section id="honest" className="scroll-mt-8 mx-auto w-full max-w-[1180px] px-5 py-20 sm:px-8 lg:py-28">
+          <h2 className="display max-w-2xl text-[38px] text-ink sm:text-[52px]">What Arvo is, and what it is not</h2>
+          <p className="mt-4 max-w-2xl text-[16px] leading-relaxed text-ink-2">
+            Most investing apps make money when you trade. Arvo doesn&apos;t sell investments at all, so it has no reason to push you
+            towards anything.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <div className="mt-12 grid gap-10 md:grid-cols-2 md:gap-16">
+            <div>
+              <h3 className="text-[15px] font-semibold text-ink">Arvo is</h3>
+              <ul className="mt-4 space-y-4">
+                {IS.map((item) => (
+                  <li key={item} className="flex gap-3.5 text-[16px] leading-snug text-ink">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-ink"><Check size={14} strokeWidth={2.6} /></span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-ink">Arvo is not</h3>
+              <ul className="mt-4 space-y-4">
+                {IS_NOT.map((item) => (
+                  <li key={item} className="flex gap-3.5 text-[16px] leading-snug text-ink-2">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sunken text-ink-3"><X size={14} strokeWidth={2.6} /></span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section className="px-5 pb-20 sm:px-8 lg:pb-28">
+          <div className="relative mx-auto w-full max-w-[1180px] overflow-hidden rounded-[32px] bg-brand px-7 py-14 text-on-brand sm:px-14 sm:py-20">
+            <Rings className="pointer-events-none absolute -bottom-16 -right-10 h-[420px] w-[420px] -scale-x-100" />
+            <div className="relative max-w-xl">
+              <h2 className="display text-[40px] sm:text-[56px]">The best time to start was earlier. The next best is this month.</h2>
+              <p className="mt-5 text-[16px] opacity-80">It takes about ten minutes to go from sign-up to a plan you understand.</p>
+              <Link
+                href="/signup"
+                className="mt-9 inline-flex h-[52px] items-center rounded-control bg-on-brand px-7 text-base font-medium text-brand transition-opacity hover:opacity-90"
+              >
+                Create your free account
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
+
+      <footer className="border-t border-line">
+        <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-6 px-5 py-10 sm:px-8 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-md">
+            <Logo size={24} />
+            <p className="mt-3 text-[12.5px] leading-relaxed text-ink-3">
+              Arvo is an educational tool, not a bank, broker or licensed financial adviser. Nothing in Arvo is personal investment
+              advice. The value of investments can fall as well as rise, and you may get back less than you put in.
+            </p>
+          </div>
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-6 gap-y-2 text-[13.5px] text-ink-2">
+            <Link href="/terms" className="hover:text-ink">Terms</Link>
+            <Link href="/privacy" className="hover:text-ink">Privacy</Link>
+            <Link href="/risk" className="hover:text-ink">Risk notice</Link>
+            <Link href="/login" className="hover:text-ink">Sign in</Link>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 }

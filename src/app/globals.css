@@ -1,26 +1,298 @@
 @import "tailwindcss";
 
+/*
+  Arvo design tokens.
+  Cool mist paper, spruce ink, one warm cloudberry accent used sparingly.
+  Figures are set in Newsreader (like a statement from a good private bank),
+  the interface in Schibsted Grotesk.
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --page: #eef2f0;
+  --surface: #fbfcfb;
+  --raised: #ffffff;
+  --sunken: #e3e9e6;
+  --ink: #0e211d;
+  --ink-2: #3e514c;
+  --ink-3: #5c6e69;
+  --line: rgb(14 33 29 / 0.11);
+  --line-strong: rgb(14 33 29 / 0.22);
+  --brand: #124a3c;
+  --brand-hover: #0c392e;
+  --on-brand: #f3f8f5;
+  --brand-soft: #dbe8e2;
+  --brand-ink: #124a3c;
+  --accent: #e9a23b;
+  --accent-soft: #fbecce;
+  --accent-ink: #6b4708;
+  --pos: #17694a;
+  --neg: #a93626;
+  --neg-soft: #f7e3df;
+  --focus: #1f7a63;
+  --s1: #0f8468;
+  --s2: #d27a10;
+  --s3: #3b74d9;
+  --s4: #c2557f;
+  --s5: #7d8f1f;
+  --s6: #6a55c9;
+  --s7: #0f97ab;
+  --s-muted: #a9b8b3;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0a1412;
+  --surface: #111e1b;
+  --raised: #172723;
+  --sunken: #0d1917;
+  --ink: #e9f0ed;
+  --ink-2: #a9bab4;
+  --ink-3: #82948e;
+  --line: rgb(233 240 237 / 0.1);
+  --line-strong: rgb(233 240 237 / 0.22);
+  --brand: #bfe3d2;
+  --brand-hover: #d6efe3;
+  --on-brand: #0b1f1a;
+  --brand-soft: #1a382f;
+  --brand-ink: #bfe3d2;
+  --accent: #f0b04f;
+  --accent-soft: #382b12;
+  --accent-ink: #f4cf94;
+  --pos: #5cc79b;
+  --neg: #ee8a78;
+  --neg-soft: #3a1c17;
+  --focus: #7fd1b3;
+  --s1: #2fa586;
+  --s2: #cf7f1f;
+  --s3: #5b8fe6;
+  --s4: #d0688f;
+  --s5: #8f9f35;
+  --s6: #8a78e0;
+  --s7: #2aa3b5;
+  --s-muted: #4a5d57;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-on-brand: var(--on-brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-pos: var(--pos);
+  --color-neg: var(--neg);
+  --color-neg-soft: var(--neg-soft);
+  --color-focus: var(--focus);
+  --font-sans: "Schibsted Grotesk Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Newsreader Variable", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --radius-panel: 18px;
+  --radius-control: 10px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--page);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  font-feature-settings: "ss01" 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Serif figures: tabular, lining, slightly tightened. */
+.figure {
+  font-family: var(--font-serif);
+  font-variant-numeric: lining-nums;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+}
+
+/* Schibsted's tabular feature also widens "." and ",", which reads badly in
+   amounts. Its default figures are already near-uniform, so right-aligned
+   columns line up without it. */
+.tnum {
+  font-variant-numeric: normal;
+}
+
+.display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--ink);
+}
+
+/* Range input, used by the growth explorer and the profile form. */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--brand) var(--fill, 50%), var(--line-strong) var(--fill, 50%));
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--brand);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  border-radius: 999px;
+  background: var(--raised);
+  border: 2px solid var(--brand);
+  box-shadow: 0 1px 2px rgb(14 33 29 / 0.18);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--raised);
+  border: 2px solid var(--brand);
+}
+
+/* The single load moment: the page settles upward once. */
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.settle {
+  animation: settle 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: var(--len, 1000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Safe areas for installed (standalone) use on phones. */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Print: the spending sheet prints as a clean table. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
+
+/* Long-form text on the legal pages. */
+.legal {
+  max-width: 68ch;
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1.65;
+}
+.legal h1 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  font-size: clamp(38px, 6vw, 52px);
+  color: var(--ink);
+}
+.legal .lead {
+  margin-top: 12px;
+  color: var(--ink-3);
+  font-size: 15px;
+}
+.legal h2 {
+  margin-top: 40px;
+  margin-bottom: 8px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.legal p {
+  margin-top: 12px;
+}
+.legal ul {
+  margin-top: 12px;
+  padding-left: 20px;
+  list-style: disc;
+}
+.legal li {
+  margin-top: 6px;
+}
+.legal a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.legal strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.legal .small {
+  margin-top: 40px;
+  font-size: 13.5px;
+  color: var(--ink-3);
 }
