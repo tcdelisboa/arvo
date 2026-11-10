@@ -2,8 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/schibsted-grotesk/index.css";
 import "@fontsource-variable/newsreader/opsz.css";
 import "./globals.css";
+import { appUrl } from "@/lib/url";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const APP_URL = appUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),

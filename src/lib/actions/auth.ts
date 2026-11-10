@@ -6,6 +6,7 @@ import { q, q1 } from "../db";
 import { hashPassword, randomToken, sha256, verifyPassword } from "../crypto";
 import { createSession, destroySession, recordAttempt, tooManyAttempts } from "../auth";
 import { sendEmail } from "../email";
+import { appUrl } from "../url";
 
 export type AuthState = {
   error?: string;
@@ -105,7 +106,7 @@ export async function requestReset(_prev: AuthState, formData: FormData): Promis
       "INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES ($1, $2, now() + interval '1 hour')",
       [sha256(token), user.id],
     );
-    const base = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+    const base = appUrl();
     await sendEmail(
       email,
       "Reset your Arvo password",

@@ -5,6 +5,7 @@ import { decrypt, encrypt } from "./crypto";
 import { createAccount, insertTransactions, type NewTx } from "./data";
 import type { Category } from "./categories";
 import { randomUUID } from "node:crypto";
+import { appUrl } from "./url";
 
 /**
  * Bank connection through Plaid (open banking in the UK and 17 EU countries,
@@ -44,8 +45,7 @@ function countryCodes(): CountryCode[] {
 
 /** European banks sign in on their own site and send the person back to this address. */
 export function redirectUri(): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  return `${base.replace(/\/$/, "")}/accounts/return`;
+  return `${appUrl()}/accounts/return`;
 }
 
 export async function createLinkToken(userId: string): Promise<string> {

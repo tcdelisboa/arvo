@@ -59,6 +59,12 @@ Everything else switches on an optional feature:
 4. **Environment Variables**: add `APP_SECRET` (`openssl rand -base64 48`), `NEXT_PUBLIC_APP_URL` (your domain), and any optional keys.
 5. Deploy. For bank connections, add `https://your-domain/accounts/return` as an allowed redirect URI in the Plaid dashboard.
 
+### Deploy (Render)
+
+`render.yaml` describes the whole setup: a web service, a Postgres database, and a generated `APP_SECRET`. In Render
+choose **New, Blueprint**, pick the repository, and apply. The free plan sleeps after 15 minutes without visitors
+(the first page then takes about a minute), and its free database expires after 30 days.
+
 Any Node host works the same way: `npm run build && npm start` with the variables set.
 
 ## Before you launch to the public
