@@ -59,6 +59,21 @@ export default async function SettingsPage() {
         </Panel>
 
         <Panel>
+          <div className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
+            <div>
+              <h2 className="text-[17px] font-semibold text-ink">Plan</h2>
+              <p className="text-[13.5px] text-ink-3">
+                {user.plan === "plus" ? "You are on Plus." : "You are on Free."}
+              </p>
+            </div>
+            <span className="flex flex-wrap gap-2">
+              {user.isAdmin ? <Link href="/admin" className={buttonClass("secondary", "md")}>Admin</Link> : null}
+              <Link href="/plus" className={buttonClass("secondary", "md")}>{user.plan === "plus" ? "What Plus includes" : "See Plus"}</Link>
+            </span>
+          </div>
+        </Panel>
+
+        <Panel>
           <PanelHeader title="Password" />
           <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
             <PasswordForm />

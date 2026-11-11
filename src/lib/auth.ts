@@ -1,10 +1,11 @@
 import "server-only";
 import { cache } from "react";
 import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { q, q1 } from "./db";
 import { randomToken, sha256 } from "./crypto";
 import type { Currency } from "./format";
+import { isPlan, type Plan } from "./plan";
 
 const COOKIE = "arvo_session";
 const SESSION_DAYS = 30;
@@ -15,7 +16,17 @@ export type User = {
   name: string;
   currency: Currency;
   onboarded: boolean;
+  plan: Plan;
+  /** True when the email is listed in ADMIN_EMAILS. */
+  isAdmin: boolean;
 };
+
+function adminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 export async function createSession(userId: string): Promise<void> {
   const token = randomToken();
@@ -46,19 +57,45 @@ export async function destroySession(): Promise<void> {
 export const getUser = cache(async (): Promise<User | null> => {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
-  const row = await q1<User>(
-    `SELECT u.id, u.email, u.name, u.currency, u.onboarded
+  const row = await q1<Omit<User, "isAdmin"> & { last_seen_at: Date | string | null }>(
+    `SELECT u.id, u.email, u.name, u.currency, u.onboarded, u.plan, u.last_seen_at
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
     [sha256(token)],
   );
-  return row;
+  if (!row) return null;
+
+  // One write per person per day: which days they used Arvo (for retention).
+  const today = new Date().toISOString().slice(0, 10);
+  const lastSeen = row.last_seen_at ? new Date(row.last_seen_at).toISOString().slice(0, 10) : null;
+  if (lastSeen !== today) {
+    q("INSERT INTO activity (user_id, day) VALUES ($1, $2) ON CONFLICT DO NOTHING", [row.id, today])
+      .then(() => q("UPDATE users SET last_seen_at = now() WHERE id = $1", [row.id]))
+      .catch(() => {});
+  }
+
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    currency: row.currency,
+    onboarded: row.onboarded,
+    plan: isPlan(row.plan) ? row.plan : "free",
+    isAdmin: adminEmails().includes(row.email.toLowerCase()),
+  };
 });
 
 /** Use at the top of every signed-in page, action and route. */
 export async function requireUser(): Promise<User> {
   const user = await getUser();
   if (!user) redirect("/login");
+  return user;
+}
+
+/** Admin pages and actions. Everyone else gets the ordinary not-found page. */
+export async function requireAdmin(): Promise<User> {
+  const user = await requireUser();
+  if (!user.isAdmin) notFound();
   return user;
 }
 

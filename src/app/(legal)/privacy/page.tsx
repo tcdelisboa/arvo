@@ -20,6 +20,7 @@ export default function PrivacyPage() {
         <li><strong>Transactions:</strong> date, description, amount and category of the transactions you import or connect, and the names of the accounts they belong to.</li>
         <li><strong>Investor profile:</strong> your answers to the questionnaire (age, income, time frame, attitude to risk) and the monthly amount you choose.</li>
         <li><strong>Watchlist:</strong> the shares and funds you choose to follow.</li>
+        <li><strong>Plan and use:</strong> which plan you are on, whether you asked to be told when Plus opens, and the dates on which you used Arvo. We use the dates to see whether people come back, not what you looked at.</li>
         <li><strong>Technical data:</strong> one session cookie that keeps you signed in, and your IP address in short-lived security logs that limit repeated sign-in attempts.</li>
       </ul>
       <p>We do not use advertising or tracking cookies, and we do not sell or rent personal data.</p>

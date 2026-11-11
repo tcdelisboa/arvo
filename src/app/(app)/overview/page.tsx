@@ -6,6 +6,7 @@ import { getProfile, listAccounts, listTransactions } from "@/lib/data";
 import { loadSampleData } from "@/lib/actions/data";
 import { money, month, percent, todayIso } from "@/lib/format";
 import { categoryTotals, monthlyAverages, summarizeMonths, ymOf } from "@/lib/spending";
+import { FREE_HISTORY_MONTHS } from "@/lib/plan";
 import { buildInsights, totalPotentialSaving } from "@/lib/insights";
 import { buildPortfolio, portfolioStats } from "@/lib/portfolio";
 import { PROFILES } from "@/lib/risk";
@@ -53,7 +54,7 @@ export default async function OverviewPage() {
 
   const today = todayIso();
   const thisMonth = ymOf(today);
-  const months = summarizeMonths(txs).slice(-6);
+  const months = summarizeMonths(txs).slice(user.plan === "plus" ? -6 : -(FREE_HISTORY_MONTHS + 1));
   const averages = monthlyAverages(txs, today, 3);
   const current = months.find((m) => m.ym === thisMonth);
   const leftOver = averages.income - averages.spending;
@@ -61,6 +62,8 @@ export default async function OverviewPage() {
   const totals = categoryTotals(txs, averages.months);
   const insights = buildInsights({ txs, todayIso: today, fmt });
   const saving = totalPotentialSaving(insights);
+  const plus = user.plan === "plus";
+  const lockedIdeas = insights.filter((i) => i.saveCents > 0).length;
   const hasSample = accounts.some((a) => a.source === "sample");
   const period = averages.months.length === 1 ? month(averages.months[0], "long") : `the last ${averages.months.length} full months`;
 
@@ -155,7 +158,10 @@ export default async function OverviewPage() {
           <div className="flex flex-1 flex-col px-5 pb-5 pt-3 sm:px-6 sm:pb-6">
             {insights.length ? (
               <ul className="divide-y divide-line">
-                {insights.filter((i) => i.saveCents > 0).concat(insights.filter((i) => i.saveCents === 0)).slice(0, 3).map((insight) => (
+                {(plus
+                  ? insights.filter((i) => i.saveCents > 0).concat(insights.filter((i) => i.saveCents === 0)).slice(0, 3)
+                  : insights.filter((i) => i.saveCents === 0).slice(0, 2)
+                ).map((insight) => (
                   <li key={insight.id} className="flex items-baseline justify-between gap-4 py-3">
                     <span className="text-[14.5px] text-ink">{insight.title}</span>
                     {insight.saveCents > 0 ? (
@@ -163,6 +169,13 @@ export default async function OverviewPage() {
                     ) : null}
                   </li>
                 ))}
+                {!plus && lockedIdeas > 0 ? (
+                  <li className="py-3">
+                    <Link href="/plus" className="text-[14.5px] font-medium text-brand-ink underline underline-offset-2">
+                      {lockedIdeas} {lockedIdeas === 1 ? "way" : "ways"} to save with Plus
+                    </Link>
+                  </li>
+                ) : null}
               </ul>
             ) : (
               <p className="text-[14.5px] text-ink-2">Savings ideas appear once Arvo has a full month of transactions.</p>

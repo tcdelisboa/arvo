@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Download, Search } from "lucide-react";
+import { Download, Lock, Search } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { listAccounts, listTransactions } from "@/lib/data";
 import { CATEGORIES, CATEGORY_KEYS, categoryLabel, isCategory } from "@/lib/categories";
@@ -10,6 +10,7 @@ import {
   categoryTotals, findRecurring, monthlyAverages, summarizeMonths, ymOf, type Tx,
 } from "@/lib/spending";
 import { buildInsights } from "@/lib/insights";
+import { FREE_HISTORY_MONTHS, freeHistoryStart } from "@/lib/plan";
 import { ButtonLink, cx, fieldClass, PageHeader, Panel, PanelHeader, Stat, buttonClass } from "@/components/ui";
 import { CategoryBars } from "@/components/category-bars";
 import { CategorySelect } from "@/components/category-select";
@@ -44,7 +45,12 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
 
   const today = todayIso();
   const summaries = summarizeMonths(txs);
-  const allMonths = summaries.map((m) => m.ym);
+  const plus = user.plan === "plus";
+  // Free accounts browse the month in progress and the three before it.
+  const historyStart = plus ? "" : freeHistoryStart(today);
+  const everyMonth = summaries.map((m) => m.ym);
+  const allMonths = everyMonth.filter((ym) => ym >= historyStart);
+  const hiddenMonths = everyMonth.length - allMonths.length;
   const averages = monthlyAverages(txs, today, 3);
   const accountName = new Map(accounts.map((a) => [a.id, a.name]));
 
@@ -67,6 +73,7 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
   const needle = query.toLowerCase();
   const filtered = txs.filter(
     (tx: Tx) =>
+      ymOf(tx.date) >= historyStart &&
       (!cat || tx.category === cat) &&
       (!tm || ymOf(tx.date) === tm) &&
       (!needle || tx.description.toLowerCase().includes(needle) || tx.merchant.toLowerCase().includes(needle)),
@@ -98,9 +105,15 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
         lead="Every transaction, sorted into categories, with ideas for where to save."
         action={
           <>
-            <a href="/api/export" className={buttonClass("secondary", "md")} download>
-              <Download size={17} /> Export to Excel
-            </a>
+            {plus ? (
+              <a href="/api/export" className={buttonClass("secondary", "md")} download>
+                <Download size={17} /> Export to Excel
+              </a>
+            ) : (
+              <Link href="/plus" className={buttonClass("secondary", "md")}>
+                <Lock size={16} /> Export to Excel with Plus
+              </Link>
+            )}
           </>
         }
       />
@@ -159,9 +172,10 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
           ) : null}
         </div>
 
-        <Suspense fallback={<InsightsFallback insights={calculated} fmt={fmt} />}>
+        <Suspense fallback={<InsightsFallback insights={calculated} fmt={fmt} plus={plus} />}>
           <InsightsPanel
             fmt={fmt}
+            plus={plus}
             input={{
               userId: user.id,
               currency: user.currency,
@@ -272,6 +286,14 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
           <p className="px-5 py-8 text-[14.5px] text-ink-2 sm:px-6">No transactions match these filters.</p>
         )}
       </Panel>
+
+      {hiddenMonths > 0 ? (
+        <p className="mt-4 text-[13.5px] text-ink-2">
+          Free shows this month and the {FREE_HISTORY_MONTHS} before it. You have {hiddenMonths} earlier{" "}
+          {hiddenMonths === 1 ? "month" : "months"} stored.{" "}
+          <Link href="/plus" className="font-medium text-brand-ink underline underline-offset-2">See your full history with Plus</Link>
+        </p>
+      ) : null}
 
       <p className="mt-4 text-[12.5px] text-ink-3">
         Transfers between your own accounts and money moved to savings are not counted as spending.

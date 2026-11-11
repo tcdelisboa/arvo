@@ -1,7 +1,7 @@
 import { Lightbulb } from "lucide-react";
 import { aiEnabled, aiInsights, type AiInput } from "@/lib/ai";
 import { totalPotentialSaving, type Insight } from "@/lib/insights";
-import { Badge, Panel, PanelHeader } from "./ui";
+import { Badge, ButtonLink, Panel, PanelHeader } from "./ui";
 
 function List({ insights, fmt }: { insights: Insight[]; fmt: (cents: number) => string }) {
   return (
@@ -23,12 +23,17 @@ function Frame({
   insights,
   fmt,
   written,
+  plus,
 }: {
   insights: Insight[];
   fmt: (cents: number) => string;
   written: "ai" | "calculated";
+  plus: boolean;
 }) {
   const saving = totalPotentialSaving(insights);
+  // Free shows the overall picture; the specific ways to save are part of Plus.
+  const shown = plus ? insights : insights.filter((insight) => insight.saveCents === 0);
+  const locked = insights.length - shown.length;
   return (
     <Panel id="save" className="scroll-mt-20">
       <PanelHeader
@@ -42,7 +47,23 @@ function Frame({
       />
       <div className="px-5 pb-5 pt-3 sm:px-6 sm:pb-6">
         {insights.length ? (
-          <List insights={insights} fmt={fmt} />
+          <>
+            <List insights={shown} fmt={fmt} />
+            {locked > 0 ? (
+              <div className="mt-4 rounded-control bg-brand-soft p-4 sm:p-5">
+                <p className="text-[15px] font-semibold text-brand-ink">
+                  {locked} {locked === 1 ? "way" : "ways"} to save, worth up to {fmt(saving)} a month
+                </p>
+                <p className="mt-1 max-w-[60ch] text-[14px] leading-relaxed text-brand-ink">
+                  Arvo found {locked === 1 ? "a specific saving" : "specific savings"} in your transactions. The details, with the amount each is
+                  worth, are part of Plus.
+                </p>
+                <div className="mt-3.5">
+                  <ButtonLink href="/plus" size="sm">See what Plus includes</ButtonLink>
+                </div>
+              </div>
+            ) : null}
+          </>
         ) : (
           <p className="flex items-center gap-2 text-[14.5px] text-ink-2">
             <Lightbulb size={17} /> Savings ideas appear once Arvo has a full month of transactions.
@@ -54,11 +75,11 @@ function Frame({
 }
 
 /** Streams in: the AI version when a key is configured, the calculated version otherwise. */
-export async function InsightsPanel({ input, fmt }: { input: AiInput; fmt: (cents: number) => string }) {
-  const written = aiEnabled() && input.calculated.length ? await aiInsights(input) : null;
-  return <Frame insights={written ?? input.calculated} fmt={fmt} written={written ? "ai" : "calculated"} />;
+export async function InsightsPanel({ input, fmt, plus }: { input: AiInput; fmt: (cents: number) => string; plus: boolean }) {
+  const written = plus && aiEnabled() && input.calculated.length ? await aiInsights(input) : null;
+  return <Frame insights={written ?? input.calculated} fmt={fmt} written={written ? "ai" : "calculated"} plus={plus} />;
 }
 
-export function InsightsFallback({ insights, fmt }: { insights: Insight[]; fmt: (cents: number) => string }) {
-  return <Frame insights={insights} fmt={fmt} written="calculated" />;
+export function InsightsFallback({ insights, fmt, plus }: { insights: Insight[]; fmt: (cents: number) => string; plus: boolean }) {
+  return <Frame insights={insights} fmt={fmt} written="calculated" plus={plus} />;
 }

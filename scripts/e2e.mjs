@@ -25,7 +25,7 @@ async function run(label, viewport) {
   await page.setViewport(viewport);
   page.on("pageerror", (e) => note(`[${label}] page error: ${e.message}`));
   page.on("console", (m) => {
-    if (m.type() === "error" && !/favicon|status of 40[14]/.test(m.text())) note(`[${label}] console: ${m.text().slice(0, 300)}`);
+    if (m.type() === "error" && !/favicon|status of 40[134]/.test(m.text())) note(`[${label}] console: ${m.text().slice(0, 300)}`);
   });
   page.on("response", (r) => { if (r.status() >= 500) note(`[${label}] ${r.status()} ${r.url()}`); });
 
@@ -51,7 +51,10 @@ async function run(label, viewport) {
       .then(() => ok(what), () => note(`[${label}] expected "${needle}" (${what})`));
   };
 
-  const email = `e2e-${label}-${Date.now()}@example.com`;
+  // run-e2e.sh starts each run on an empty database and lists the desktop and
+  // phone accounts in ADMIN_EMAILS. The tablet account stays an ordinary one.
+  const email = `e2e-${label}@example.com`;
+  const admin = label !== "tablet";
   const password = "a long enough passphrase";
 
   // Landing
@@ -134,14 +137,60 @@ async function run(label, viewport) {
   await go("/spending?m=" + (await page.evaluate(() => new Date().toISOString().slice(0, 7))));
   await shot("11-spending-month", false);
 
-  // Excel export and data download
-  const exported = await page.evaluate(async () => {
-    const r = await fetch("/api/export");
-    const b = await r.arrayBuffer();
-    const head = new Uint8Array(b.slice(0, 2));
-    return { status: r.status, type: r.headers.get("content-type"), size: b.byteLength, zip: head[0] === 0x50 && head[1] === 0x4b };
-  });
-  exported.status === 200 && exported.zip && exported.size > 5000 ? ok(`Excel export (${exported.size} bytes)`) : note(`[${label}] export: ${JSON.stringify(exported)}`);
+  // Free plan: the overall picture is there, the savings, old months and export are not.
+  await go("/spending");
+  await expectText("are part of Plus", "free plan shows the savings teaser");
+  await expectText("Export to Excel with Plus", "free plan points export to Plus");
+  await expectText("Free shows this month and the 3 before it", "free plan explains the history limit");
+  const freeView = await page.evaluate(() => ({
+    saveBadges: document.body.innerText.includes("Save about"),
+    months: document.querySelectorAll("nav[aria-label='Period'] a, [data-period] a").length,
+  }));
+  !freeView.saveBadges ? ok("free plan hides the individual savings") : note(`[${label}] free plan shows savings details`);
+  const tooOld = await page.evaluate(() => { const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - 5); return d.toISOString().slice(0, 7); });
+  await go("/spending?m=" + tooOld + "&tm=" + tooOld);
+  await expectText("Spent in a typical month", "free plan cannot open an older month by address");
+  const freeExport = await page.evaluate(async () => (await fetch("/api/export")).status);
+  freeExport === 403 ? ok("export refuses the free plan") : note(`[${label}] free export status: ${freeExport}`);
+  await go("/overview");
+  await expectText("to save with Plus", "overview points savings to Plus");
+
+  // Plus page and waitlist
+  await go("/plus");
+  await expectText("Plus is not on sale yet", "plus page is honest that payments are off");
+  await shot("11a-plus");
+  await clickText("Join the Plus waitlist", "button");
+  await expectText("You are on the list", "waitlist confirmed");
+  await shot("11b-plus-waiting", false);
+
+  // Admin: only for the listed accounts
+  await go("/admin");
+  if (admin) {
+    await expectText("Asked for Plus", "admin lists the waitlist request");
+    await expectText("Own statement", "admin shows who imported a statement");
+    await shot("11c-admin");
+    await clickText("Give Plus", "button");
+    await expectText("Remove Plus", "admin can grant Plus");
+    await shot("11d-admin-plus", false);
+    await go("/spending");
+    await expectText("Save about", "plus shows every way to save");
+    const plusView = await page.evaluate(() => document.body.innerText.includes("are part of Plus") || document.body.innerText.includes("Free shows this month"));
+    !plusView ? ok("plus has no locked parts") : note(`[${label}] plus still shows free limits`);
+    await go("/spending?m=" + tooOld);
+    await expectText("Spent in " + new Date(tooOld + "-01").toLocaleString("en-GB", { month: "long", timeZone: "UTC" }), "plus opens older months");
+    await shot("11e-spending-plus");
+    const exported = await page.evaluate(async () => {
+      const r = await fetch("/api/export");
+      const b = await r.arrayBuffer();
+      const head = new Uint8Array(b.slice(0, 2));
+      return { status: r.status, type: r.headers.get("content-type"), size: b.byteLength, zip: head[0] === 0x50 && head[1] === 0x4b };
+    });
+    exported.status === 200 && exported.zip && exported.size > 5000 ? ok(`Excel export (${exported.size} bytes)`) : note(`[${label}] export: ${JSON.stringify(exported)}`);
+    await go("/plus");
+    await expectText("You have Plus", "plus page confirms the plan");
+  } else {
+    await expectText("This page doesn't exist", "admin is hidden from ordinary accounts");
+  }
   const mine = await page.evaluate(async () => { const r = await fetch("/api/me"); const j = await r.json(); return { status: r.status, n: j.transactions.length, hasHash: JSON.stringify(j).includes("scrypt") }; });
   mine.status === 200 && mine.n > 200 && !mine.hasHash ? ok(`data download (${mine.n} transactions, no password hash)`) : note(`[${label}] data download: ${JSON.stringify(mine)}`);
 

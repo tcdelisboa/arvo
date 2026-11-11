@@ -35,6 +35,7 @@ npm run lint
 | Investor profile | Ten questions scored into capacity and tolerance, with hard limits | `src/lib/risk.ts` |
 | Monthly amount | A suggestion from income, spending, safety net and debt, with reasons | `src/lib/recommend.ts` |
 | Portfolio | Model portfolios per profile, exact weights, projection with a range | `src/lib/portfolio.ts` |
+| Plans | Free and Plus tiers, a Plus waitlist (payments are not switched on), and an admin page | `src/lib/plan.ts`, `src/app/(app)/plus`, `src/app/(app)/admin` |
 | Markets | Search, quotes, charts, company details, news, and a fit rating per profile | `src/lib/market/*` |
 
 All the money logic is plain TypeScript with no framework or database in it, which is why it can be unit-tested.
@@ -49,6 +50,7 @@ Everything else switches on an optional feature:
 | `ANTHROPIC_API_KEY` | AI-written insights and asset explanations | Calculated insights (always shown first, replaced when AI answers) |
 | `PLAID_CLIENT_ID`, `PLAID_SECRET` | "Connect your bank" | Statement import and sample data |
 | `RESEND_API_KEY` | Password reset emails | The reset link is printed to the server log |
+| `ADMIN_EMAILS` | The `/admin` page for the listed accounts | Nobody can open `/admin` |
 | `MARKET_DATA=sample` | Forces sample prices | Live data, with an automatic, labelled fallback to sample prices |
 
 ## Deploy (Vercel)

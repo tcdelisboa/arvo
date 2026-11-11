@@ -20,7 +20,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <Link href="/overview" aria-label="Arvo overview" className="mb-8 px-3">
           <Logo />
         </Link>
-        <SideNav />
+        <SideNav plus={user.plan === "plus"} admin={user.isAdmin} />
         <div className="mt-auto space-y-1">
           <ThemeToggle labelled className="w-full justify-start" />
           <div className="flex items-center gap-3 rounded-control px-3 py-2">

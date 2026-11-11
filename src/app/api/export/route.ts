@@ -9,6 +9,7 @@ import { todayIso } from "@/lib/format";
 export async function GET() {
   const user = await getUser();
   if (!user) return new Response("Sign in to export your data.", { status: 401 });
+  if (user.plan !== "plus") return new Response("Excel export is part of Arvo Plus.", { status: 403 });
 
   const [txs, accounts] = await Promise.all([listTransactions(user.id), listAccounts(user.id)]);
   const accountName = new Map(accounts.map((a) => [a.id, a.name]));

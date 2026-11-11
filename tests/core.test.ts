@@ -350,3 +350,13 @@ describe("sample market data", () => {
     expect(normaliseSymbol("<script>")).toBeNull();
   });
 });
+
+describe("plans", () => {
+  it("lets a free account browse this month and the three before it", async () => {
+    const { freeHistoryStart, isPlan } = await import("../src/lib/plan");
+    expect(freeHistoryStart("2026-11-11")).toBe("2026-08");
+    expect(freeHistoryStart("2027-02-01")).toBe("2026-11");
+    expect(isPlan("plus")).toBe(true);
+    expect(isPlan("gold")).toBe(false);
+  });
+});

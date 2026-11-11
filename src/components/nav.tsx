@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartPie, House, Landmark, ReceiptText, Settings, TrendingUp, type LucideIcon } from "lucide-react";
+import { BadgePlus, ChartPie, House, Landmark, ReceiptText, Settings, ShieldCheck, TrendingUp, type LucideIcon } from "lucide-react";
 import { cx } from "./ui";
 
 type Item = { href: string; label: string; icon: LucideIcon; mobile?: boolean };
@@ -18,11 +18,16 @@ const ITEMS: Item[] = [
 
 const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
-export function SideNav() {
+export function SideNav({ plus, admin }: { plus: boolean; admin: boolean }) {
   const pathname = usePathname();
+  const items: Item[] = [
+    ...ITEMS,
+    ...(plus ? [] : [{ href: "/plus", label: "Get Plus", icon: BadgePlus }]),
+    ...(admin ? [{ href: "/admin", label: "Admin", icon: ShieldCheck }] : []),
+  ];
   return (
     <nav aria-label="Main" className="flex flex-col gap-0.5">
-      {ITEMS.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const active = isActive(pathname, href);
         return (
           <Link
@@ -52,7 +57,9 @@ export function TabBar() {
     >
       <ul className="mx-auto grid max-w-lg grid-cols-5">
         {ITEMS.filter((item) => item.mobile).map(({ href, label, icon: Icon }) => {
-          const active = isActive(pathname, href) || (href === "/settings" && isActive(pathname, "/accounts"));
+          const active =
+            isActive(pathname, href) ||
+            (href === "/settings" && ["/accounts", "/plus", "/admin"].some((path) => isActive(pathname, path)));
           return (
             <li key={href}>
               <Link
