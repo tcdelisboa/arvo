@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileSpreadsheet, FlaskConical, Landmark } from "lucide-react";
+import { ChartPie, FileSpreadsheet, FlaskConical, Landmark } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { getProfile, listAccounts, listTransactions } from "@/lib/data";
 import { loadSampleData } from "@/lib/actions/data";
@@ -29,25 +29,51 @@ export default async function OverviewPage() {
   const fmt = (cents: number) => money(cents, user.currency, { whole: true });
 
   if (!txs.length) {
+    const profileName = profile ? PROFILES[profile.level].name : null;
     return (
       <>
-        <PageHeader title={`Hello, ${first}`} lead="Arvo needs your transactions before it can show you anything useful." />
-        <Panel className="p-6 sm:p-10">
-          <h2 className="display max-w-xl text-[30px] text-ink sm:text-[36px]">Start by bringing in your transactions</h2>
-          <p className="mt-3 max-w-xl text-ink-2">
-            Once Arvo can see what comes in and what goes out, it shows where your money goes, what you can afford to
-            invest, and a plan that fits you.
-          </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <ButtonLink href="/accounts"><Landmark size={17} /> Add your transactions</ButtonLink>
-            <form action={loadSampleData}>
-              <SubmitButton variant="secondary" pendingLabel="Loading"><FlaskConical size={17} /> Try with sample data</SubmitButton>
-            </form>
-          </div>
-          <p className="mt-5 flex items-center gap-2 text-[13.5px] text-ink-3">
-            <FileSpreadsheet size={15} /> A CSV export from any bank works.
-          </p>
-        </Panel>
+        <PageHeader
+          title={`Hello, ${first}`}
+          lead={profile ? "Your investing plan is ready. Add your spending whenever you want the full picture." : "Two ways to begin. Pick whichever suits you today."}
+        />
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Panel className="p-6 sm:p-8">
+            <h2 className="display text-[27px] text-ink sm:text-[30px]">
+              {profile ? `Your investor profile is ${profileName}` : "Start with investing"}
+            </h2>
+            <p className="mt-3 text-ink-2">
+              {profile
+                ? "See the funds that fit your profile, the share to put into each, and what it could grow into."
+                : "Ten questions about your situation and how you feel about risk. You get your investor profile and a model portfolio. No bank data needed."}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              {profile ? (
+                <>
+                  <ButtonLink href="/portfolio"><ChartPie size={17} /> Open your portfolio</ButtonLink>
+                  <ButtonLink href="/markets" variant="secondary">Browse the markets</ButtonLink>
+                </>
+              ) : (
+                <ButtonLink href="/portfolio/profile"><ChartPie size={17} /> Find your investor profile</ButtonLink>
+              )}
+            </div>
+          </Panel>
+
+          <Panel className="p-6 sm:p-8">
+            <h2 className="display text-[27px] text-ink sm:text-[30px]">{profile ? "Add your spending" : "Start with your spending"}</h2>
+            <p className="mt-3 text-ink-2">
+              Bring in a statement and Arvo shows where your money goes{profile ? " and checks how much you can really afford to invest" : ", then what you can afford to invest"}.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <ButtonLink href="/accounts" variant={profile ? "primary" : "secondary"}><Landmark size={17} /> Add your transactions</ButtonLink>
+              <form action={loadSampleData}>
+                <SubmitButton variant="secondary" pendingLabel="Loading"><FlaskConical size={17} /> Try with sample data</SubmitButton>
+              </form>
+            </div>
+            <p className="mt-5 flex items-center gap-2 text-[13.5px] text-ink-3">
+              <FileSpreadsheet size={15} /> A CSV export from any bank works.
+            </p>
+          </Panel>
+        </div>
       </>
     );
   }

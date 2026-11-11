@@ -108,14 +108,14 @@ const WINDOW_MINUTES = 15;
 const MAX_ATTEMPTS = 8;
 
 /** Throttle sign-in and reset attempts per email + IP. */
-export async function tooManyAttempts(scope: string, email: string): Promise<boolean> {
+export async function tooManyAttempts(scope: string, email: string, max = MAX_ATTEMPTS): Promise<boolean> {
   const key = `${scope}:${email.toLowerCase()}:${await clientIp()}`;
   const row = await q1<{ n: number }>(
     `SELECT count(*)::int AS n FROM auth_attempts
       WHERE key = $1 AND at > now() - ($2 || ' minutes')::interval`,
     [key, String(WINDOW_MINUTES)],
   );
-  return (row?.n ?? 0) >= MAX_ATTEMPTS;
+  return (row?.n ?? 0) >= max;
 }
 
 export async function recordAttempt(scope: string, email: string): Promise<void> {

@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { ButtonLink } from "@/components/ui";
 import { GrowthExplorer } from "@/components/growth-explorer";
 import { Rings } from "@/components/rings";
+import { WaitlistForm } from "@/components/waitlist-form";
 
 /* Small, static previews of the real screens. No screenshots, so they follow the theme. */
 
@@ -140,8 +141,8 @@ export default function LandingPage() {
           <Link href="/login" className="inline-flex h-10 items-center rounded-control px-3 text-[14.5px] font-medium text-ink hover:bg-sunken">
             Sign in
           </Link>
-          <ButtonLink href="/signup" size="sm" className="hidden h-10 sm:inline-flex">
-            Create account
+          <ButtonLink href="/signup" size="sm" variant="secondary" className="hidden h-10 sm:inline-flex">
+            Try the early version
           </ButtonLink>
         </nav>
       </header>
@@ -156,11 +157,14 @@ export default function LandingPage() {
               Arvo shows where your money goes, works out what you can afford to set aside, and turns it into a portfolio
               that fits you. In plain language, from the first euro.
             </p>
-            <div className="mt-9 flex flex-wrap items-center gap-3">
-              <ButtonLink href="/signup" size="lg">Create your free account</ButtonLink>
-              <ButtonLink href="/login" size="lg" variant="ghost">Sign in</ButtonLink>
+            <div className="mt-9 max-w-[34rem]">
+              <WaitlistForm />
             </div>
-            <p className="mt-5 text-[13.5px] text-ink-3">Free during early access. No card, and nothing to install.</p>
+            <p className="mt-6 text-[14.5px] text-ink-2">
+              Arvo is still being built.{" "}
+              <Link href="/signup" className="font-medium text-brand-ink underline underline-offset-2">Try the early version</Link>
+              {" "}if you are curious. It is free and needs nothing installed.
+            </p>
           </div>
           <div className="settle [animation-delay:90ms]">
             <GrowthExplorer />
@@ -224,13 +228,8 @@ export default function LandingPage() {
             <Rings className="pointer-events-none absolute -bottom-16 -right-10 h-[420px] w-[420px] -scale-x-100" />
             <div className="relative max-w-xl">
               <h2 className="display text-[40px] sm:text-[56px]">The best time to start was earlier. The next best is this month.</h2>
-              <p className="mt-5 text-[16px] opacity-80">It takes about ten minutes to go from sign-up to a plan you understand.</p>
-              <Link
-                href="/signup"
-                className="mt-9 inline-flex h-[52px] items-center rounded-control bg-on-brand px-7 text-base font-medium text-brand transition-opacity hover:opacity-90"
-              >
-                Create your free account
-              </Link>
+              <p className="mb-9 mt-5 text-[16px] opacity-80">Leave your email and you will be among the first to use Arvo when it opens.</p>
+              <WaitlistForm id="waitlist-email-end" onBrand />
             </div>
           </div>
         </section>

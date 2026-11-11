@@ -36,6 +36,8 @@ npm run lint
 | Monthly amount | A suggestion from income, spending, safety net and debt, with reasons | `src/lib/recommend.ts` |
 | Portfolio | Model portfolios per profile, exact weights, projection with a range | `src/lib/portfolio.ts` |
 | Plans | Free and Plus tiers, a Plus waitlist (payments are not switched on), and an admin page | `src/lib/plan.ts`, `src/app/(app)/plus`, `src/app/(app)/admin` |
+| Waitlist | Public email sign-up on the landing page and `/waitlist`, with `?src=` tracking, listed in the admin page | `src/lib/actions/waitlist.ts`, `src/app/waitlist` |
+| Welcome | Two questions: what the person wants, then how to start (statement, investor profile, markets or sample data) | `src/components/welcome-form.tsx`, `src/lib/goals.ts` |
 | Markets | Search, quotes, charts, company details, news, and a fit rating per profile | `src/lib/market/*` |
 
 All the money logic is plain TypeScript with no framework or database in it, which is why it can be unit-tested.
@@ -84,7 +86,7 @@ These are not code tasks; they are things only the owner of the product can do.
    legal pages before you market it.
 2. **Legal pages.** `/terms`, `/privacy` and `/risk` are complete drafts with placeholders for your company. Set
    `NEXT_PUBLIC_LEGAL_ENTITY`, `NEXT_PUBLIC_LEGAL_ADDRESS` and `NEXT_PUBLIC_CONTACT_EMAIL`, then have them reviewed.
-3. **Market data licence.** Live prices come from Yahoo Finance through the open-source `yahoo-finance2` library.
+3. **Market data licence.** Live prices come from Yahoo Finance's public web endpoints (`src/lib/market/yahoo.ts`). `/api/markets/status` and the admin page show whether each part answers from the server.
    Yahoo has no official public API and its terms do not allow commercial use, and it rate-limits servers. Before
    charging money or growing, replace `src/lib/market/yahoo.ts` with a licensed provider (Twelve Data, EODHD,
    Financial Modeling Prep). Nothing else in the app changes: everything goes through `src/lib/market/index.ts`.

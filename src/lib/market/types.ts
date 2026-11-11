@@ -63,7 +63,8 @@ export function isRange(value: unknown): value is Range {
 /** Where a piece of market data came from. Shown in the UI, never hidden. */
 export type Source = "live" | "sample";
 
-export type Sourced<T> = { data: T; source: Source };
+/** `asOf` is set only when live data could not be refreshed and an older answer is shown. */
+export type Sourced<T> = { data: T; source: Source; asOf?: number };
 
 export const EMPTY_METRICS: Metrics = {
   marketCap: null,

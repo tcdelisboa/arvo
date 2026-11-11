@@ -10,7 +10,7 @@ import { getDetail, getHistory, getNews } from "@/lib/market";
 import { assessFit, volatilityFrom, type Fit } from "@/lib/market/suitability";
 import { normaliseSymbol, type Detail } from "@/lib/market/types";
 import { UNIVERSE_BY_SYMBOL } from "@/lib/market/universe";
-import { compact, number, percent, price } from "@/lib/format";
+import { compact, day, number, percent, price, todayIso } from "@/lib/format";
 import { PROFILES, type Level } from "@/lib/risk";
 import { Badge, ButtonLink, cx, Notice, Panel, PanelHeader } from "@/components/ui";
 import { PriceChart } from "@/components/price-chart";
@@ -54,7 +54,7 @@ export default async function AssetPage({ params }: PageProps<"/markets/[symbol]
   const symbol = normaliseSymbol((await params).symbol);
   if (!symbol) notFound();
 
-  const [{ data: detail, source }, history, news, profile, watchlist] = await Promise.all([
+  const [{ data: detail, source, asOf }, history, news, profile, watchlist] = await Promise.all([
     getDetail(symbol),
     getHistory(symbol, "1y"),
     getNews(symbol),
@@ -125,6 +125,12 @@ export default async function AssetPage({ params }: PageProps<"/markets/[symbol]
         <div className="mb-5">
           <Notice tone="accent" title="Sample prices.">
             Live market data can&apos;t be reached right now. The price and chart below are generated for demonstration and are not real.
+          </Notice>
+        </div>
+      ) : asOf ? (
+        <div className="mb-5">
+          <Notice title="This price may be out of date.">
+            Live prices can&apos;t be refreshed right now. This is the last one Arvo received, on {day(todayIso(new Date(asOf)))}.
           </Notice>
         </div>
       ) : null}

@@ -6,7 +6,7 @@ import { getQuotes } from "@/lib/market";
 import { assessFit } from "@/lib/market/suitability";
 import { EMPTY_METRICS, type Quote } from "@/lib/market/types";
 import { GROUPS, UNIVERSE, UNIVERSE_BY_SYMBOL } from "@/lib/market/universe";
-import { percent, price } from "@/lib/format";
+import { day, percent, price, todayIso } from "@/lib/format";
 import { PROFILES, type Level } from "@/lib/risk";
 import { ButtonLink, cx, Notice, PageHeader, Panel, PanelHeader } from "@/components/ui";
 import { MarketSearch } from "@/components/market-search";
@@ -51,7 +51,7 @@ export default async function MarketsPage() {
   const user = await requireUser();
   const [profile, watchlist] = await Promise.all([getProfile(user.id), listWatchlist(user.id)]);
   const symbols = [...new Set([...UNIVERSE.map((u) => u.symbol), ...watchlist])];
-  const { data: quotes, source } = await getQuotes(symbols);
+  const { data: quotes, source, asOf } = await getQuotes(symbols);
   const bySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
   const level = profile?.level ?? null;
   const watched = watchlist.map((symbol) => bySymbol.get(symbol)).filter((quote): quote is Quote => !!quote);
@@ -64,6 +64,12 @@ export default async function MarketsPage() {
         <div className="mb-5">
           <Notice tone="accent" title="Sample prices.">
             Live market data can&apos;t be reached right now, so the prices on this page are generated for demonstration and are not real.
+          </Notice>
+        </div>
+      ) : asOf ? (
+        <div className="mb-5">
+          <Notice title="Prices may be out of date.">
+            Live prices can&apos;t be refreshed right now. These are the last ones Arvo received, on {day(todayIso(new Date(asOf)))}.
           </Notice>
         </div>
       ) : null}

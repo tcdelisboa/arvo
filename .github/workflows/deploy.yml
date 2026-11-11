@@ -1,0 +1,26 @@
+name: Deploy to Render
+
+# Render does not always pick up pushes to this repository on its own, so this
+# asks it to deploy the newest commit. It needs one repository secret,
+# RENDER_DEPLOY_HOOK: the "Deploy Hook" address from the Render service's
+# Settings page. Without the secret the job does nothing.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+    steps:
+      - name: Ask Render to deploy
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK is not set; skipping."
+            exit 0
+          fi
+          curl -fsS --retry 3 --max-time 60 -X POST "$HOOK" > /dev/null
+          echo "Deploy requested."

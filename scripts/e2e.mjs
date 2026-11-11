@@ -44,7 +44,6 @@ async function run(label, viewport) {
     await el.evaluate((node) => node.scrollIntoView({ block: "center" }));
     await el.click();
   };
-  const text = () => page.evaluate(() => document.body.innerText);
   const expectText = async (needle, what) => {
     await page
       .waitForFunction((n) => document.body.innerText.includes(n), { timeout: 8000 }, needle)
@@ -57,9 +56,20 @@ async function run(label, viewport) {
   const admin = label !== "tablet";
   const password = "a long enough passphrase";
 
-  // Landing
-  await go("/");
+  // Landing and the public waitlist
+  await go(admin ? "/" : "/waitlist?src=tiktok");
   await shot("01-landing");
+  await clickText("Join the waitlist", "button[type=submit]");
+  await expectText("Enter a valid email address", "waitlist rejects an empty email");
+  await page.type("input[name=email]", `waiting-${label}@example.com`);
+  await clickText("Join the waitlist", "button[type=submit]");
+  await expectText("You are on the list", "waitlist accepts an email");
+  await clickText("Start investing", "button[type=submit]");
+  await expectText("We will email you when Arvo opens", "waitlist records what the person wants");
+  await shot("01a-waitlist-done", false);
+  const status = await page.evaluate(async () => { const r = await fetch("/api/markets/status"); return { code: r.status, body: await r.json() }; });
+  status.code === 200 && ["live", "sample"].includes(status.body.mode) ? ok(`market status endpoint (${status.body.mode})`) : note(`[${label}] market status: ${JSON.stringify(status).slice(0, 200)}`);
+  await go("/");
   await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
   await shot("02-landing-dark", false);
   await page.evaluate(() => { document.documentElement.dataset.theme = "light"; });
@@ -78,9 +88,25 @@ async function run(label, viewport) {
   page.url().endsWith("/welcome") ? ok("sign-up lands on welcome") : note(`[${label}] after sign-up at ${page.url()}`);
   await shot("04-welcome");
 
+  // Welcome: say what you came for, then choose how to start
+  const route = {
+    desktop: { goal: "See where my money goes", start: "Skip the statement and start with investing", lands: "/portfolio/profile" },
+    mobile: { goal: "Understand shares and funds", start: "Browse shares and funds", lands: "/markets" },
+    tablet: { goal: "Start investing", start: "Start from my real spending", lands: "/accounts" },
+  }[label];
+  await clickText(route.goal, "button");
+  await expectText("How would you like to start?", "welcome asks how to start");
+  await shot("04a-welcome-start");
+  await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }), clickText(route.start, "button[type=submit]")]);
+  page.url().endsWith(route.lands) ? ok(`welcome sends "${route.goal}" to ${route.lands}`) : note(`[${label}] welcome landed on ${page.url()}`);
+  if (label === "desktop") {
+    await page.waitForSelector("#age", { timeout: 8000 }).then(() => ok("investor questions open without any bank data"), () => note(`[${label}] investor questions did not open`));
+  }
+
   // Empty state first
-  await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }), clickText("Skip for now", "button")]);
-  await expectText("Start by bringing in your transactions", "empty overview guides the person");
+  await go("/overview");
+  await expectText("Start with investing", "empty overview offers investing first");
+  await expectText("Start with your spending", "empty overview offers spending too");
   await shot("05-overview-empty");
   await go("/spending");
   await expectText("Nothing to show yet", "empty spending state");
@@ -167,6 +193,11 @@ async function run(label, viewport) {
   await go("/admin");
   if (admin) {
     await expectText("Asked for Plus", "admin lists the waitlist request");
+    await expectText(`waiting-${label}@example.com`, "admin lists the public waitlist");
+    await expectText("What people want Arvo for", "admin shows what people came for");
+    await expectText("Live market data", "admin shows the market data status");
+    const csvFile = await page.evaluate(async () => { const r = await fetch("/api/admin/waitlist"); return { code: r.status, text: await r.text() }; });
+    csvFile.code === 200 && csvFile.text.includes(`waiting-${label}@example.com`) ? ok("waitlist downloads as CSV") : note(`[${label}] waitlist CSV: ${csvFile.code}`);
     await expectText("Own statement", "admin shows who imported a statement");
     await shot("11c-admin");
     await clickText("Give Plus", "button");
@@ -190,6 +221,8 @@ async function run(label, viewport) {
     await expectText("You have Plus", "plus page confirms the plan");
   } else {
     await expectText("This page doesn't exist", "admin is hidden from ordinary accounts");
+    const hidden = await page.evaluate(async () => (await fetch("/api/admin/waitlist")).status);
+    hidden === 404 ? ok("waitlist download is hidden from ordinary accounts") : note(`[${label}] waitlist CSV status for a non-admin: ${hidden}`);
   }
   const mine = await page.evaluate(async () => { const r = await fetch("/api/me"); const j = await r.json(); return { status: r.status, n: j.transactions.length, hasHash: JSON.stringify(j).includes("scrypt") }; });
   mine.status === 200 && mine.n > 200 && !mine.hasHash ? ok(`data download (${mine.n} transactions, no password hash)`) : note(`[${label}] data download: ${JSON.stringify(mine)}`);
@@ -251,7 +284,7 @@ async function run(label, viewport) {
   await clickText("Watch", "button");
   await page.waitForFunction(() => document.body.innerText.includes("Watching"), { timeout: 10000 }).then(() => ok("watchlist toggle"), () => note(`[${label}] watch failed`));
   // The button updates optimistically; give the server a moment to save before leaving the page.
-  await page.waitForNetworkIdle({ idleTime: 600 });
+  await page.waitForNetworkIdle({ idleTime: 600, timeout: 10000 }).catch(() => new Promise((r) => setTimeout(r, 1500)));
   await go("/markets");
   await expectText("Watching", "watchlist appears on markets");
   await go("/markets/VWCE.DE");

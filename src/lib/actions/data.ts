@@ -9,6 +9,7 @@ import { parseStatement } from "../csv";
 import { createAccount, insertTransactions } from "../data";
 import { generateDemoRows, seedFrom } from "../demo";
 import { isCurrency } from "../format";
+import { isGoal } from "../goals";
 
 export type ImportState = { error?: string; ok?: string } | null;
 
@@ -20,18 +21,22 @@ async function markOnboarded(userId: string) {
   await q("UPDATE users SET onboarded = TRUE WHERE id = $1", [userId]);
 }
 
-/** Fill the account with clearly labelled sample transactions. */
-export async function loadSampleData(formData?: FormData): Promise<void> {
-  const user = await requireUser();
-  const currency = formData?.get("currency");
-  if (isCurrency(currency)) await q("UPDATE users SET currency = $1 WHERE id = $2", [currency, user.id]);
-  const accountId = await createAccount(user.id, {
+async function addSampleData(userId: string) {
+  const accountId = await createAccount(userId, {
     name: "Sample current account",
     institution: "Sample data",
     source: "sample",
     externalId: "sample",
   });
-  await insertTransactions(user.id, accountId, generateDemoRows(seedFrom(user.id)), "sample");
+  await insertTransactions(userId, accountId, generateDemoRows(seedFrom(userId)), "sample");
+}
+
+/** Fill the account with clearly labelled sample transactions. */
+export async function loadSampleData(formData?: FormData): Promise<void> {
+  const user = await requireUser();
+  const currency = formData?.get("currency");
+  if (isCurrency(currency)) await q("UPDATE users SET currency = $1 WHERE id = $2", [currency, user.id]);
+  await addSampleData(user.id);
   await markOnboarded(user.id);
   refresh();
   redirect("/overview");
@@ -99,9 +104,14 @@ export async function finishWelcome(formData: FormData): Promise<void> {
   const user = await requireUser();
   const currency = formData.get("currency");
   if (isCurrency(currency)) await q("UPDATE users SET currency = $1 WHERE id = $2", [currency, user.id]);
+  const goal = formData.get("goal");
+  if (isGoal(goal)) await q("UPDATE users SET goal = $1 WHERE id = $2", [goal, user.id]);
+  const start = String(formData.get("start") ?? "");
+  if (start === "sample") await addSampleData(user.id);
   await markOnboarded(user.id);
   refresh();
-  redirect(String(formData.get("next") ?? "") === "accounts" ? "/accounts" : "/overview");
+  const next: Record<string, string> = { import: "/accounts", invest: "/portfolio/profile", markets: "/markets" };
+  redirect(next[start] ?? "/overview");
 }
 
 export async function setCurrency(formData: FormData): Promise<void> {
