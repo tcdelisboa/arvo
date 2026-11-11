@@ -1,23 +1,19 @@
-# Render blueprint: one web service, one Postgres database, secrets generated for you.
-# In Render: New > Blueprint > pick this repository.
-databases:
-  - name: arvo-db
-    plan: free
-
+# Render blueprint: one web service in Frankfurt. The database is external
+# (Neon, also in Frankfurt); Render asks for its connection string when the
+# blueprint is first applied. In Render: New > Blueprint > pick this repository.
 services:
   - type: web
     name: arvo
     runtime: node
+    region: frankfurt
     plan: free
     buildCommand: npm ci && npm run build
     startCommand: npm start
-    healthCheckPath: /
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: "22"
       - key: DATABASE_URL
-        fromDatabase:
-          name: arvo-db
-          property: connectionString
+        sync: false
       - key: APP_SECRET
         generateValue: true

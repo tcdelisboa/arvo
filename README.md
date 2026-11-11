@@ -59,11 +59,16 @@ Everything else switches on an optional feature:
 4. **Environment Variables**: add `APP_SECRET` (`openssl rand -base64 48`), `NEXT_PUBLIC_APP_URL` (your domain), and any optional keys.
 5. Deploy. For bank connections, add `https://your-domain/accounts/return` as an allowed redirect URI in the Plaid dashboard.
 
-### Deploy (Render)
+### Deploy (Render + Neon, free)
 
-`render.yaml` describes the whole setup: a web service, a Postgres database, and a generated `APP_SECRET`. In Render
-choose **New, Blueprint**, pick the repository, and apply. The free plan sleeps after 15 minutes without visitors
-(the first page then takes about a minute), and its free database expires after 30 days.
+1. Create a free Postgres database on [Neon](https://neon.tech) in **AWS Europe Central 1 (Frankfurt)** and copy the
+   pooled connection string (the host contains `-pooler`).
+2. In Render choose **New, Blueprint**, pick the repository, and apply. `render.yaml` creates the web service in
+   Frankfurt, generates `APP_SECRET`, and asks for `DATABASE_URL`: paste the Neon string there.
+3. Tables are created on the first request.
+
+The free Render plan sleeps after 15 minutes without visitors (the first page then takes about a minute). The Neon
+free database does not expire.
 
 Any Node host works the same way: `npm run build && npm start` with the variables set.
 
