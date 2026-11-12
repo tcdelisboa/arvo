@@ -131,6 +131,30 @@ async function run(label, viewport) {
   await page.type("#name", "My bank");
   await clickText("Import statement", "button");
   await page.waitForFunction(() => document.body.innerText.includes("Imported 0 transactions"), { timeout: 15000 }).then(() => ok("re-import creates no duplicates"), () => note(`[${label}] duplicate protection failed`));
+  // PDF import: a statement printed to PDF, with debit and credit columns and a wrapped description.
+  const pdfFile = path.join(OUT, `statement-${label}.pdf`);
+  const printer = await browser.newPage();
+  await printer.setContent(`<meta charset="utf-8"><style>body{font:11px Arial;margin:30px}table{border-collapse:collapse;width:100%}td,th{padding:4px 6px;text-align:left}.n{text-align:right}</style>
+    <h1>Example Bank</h1><p>Statement 1 September 2026 to 30 September 2026</p>
+    <table><tr><th>Date</th><th>Details</th><th class="n">Paid out</th><th class="n">Paid in</th><th class="n">Balance</th></tr>
+    <tr><td></td><td>Balance brought forward</td><td class="n"></td><td class="n"></td><td class="n">500.00</td></tr>
+    <tr><td>03 Sep</td><td>BOOKSHOP TALLINN</td><td class="n">12.40</td><td class="n"></td><td class="n">487.60</td></tr>
+    <tr><td>09 Sep</td><td>CORNER BAKERY<br>CARD 4417</td><td class="n">3.10</td><td class="n"></td><td class="n">484.50</td></tr>
+    <tr><td>15 Sep</td><td>REFUND BOOKSHOP</td><td class="n"></td><td class="n">5.00</td><td class="n">489.50</td></tr></table><p>Page 1 of 1</p>`);
+  await printer.pdf({ path: pdfFile, format: "A4" });
+  await printer.close();
+  const input3 = await page.$("input[type=file]");
+  await input3.uploadFile(pdfFile);
+  await page.type("#name", "PDF bank");
+  await clickText("Import statement", "button");
+  await page.waitForFunction(() => document.body.innerText.includes("Imported 3 transactions into PDF bank"), { timeout: 20000 }).then(() => ok("PDF import of 3 rows"), async () => note(`[${label}] PDF import message missing: ${(await page.evaluate(() => document.querySelector("form [role=alert], form [role=status]")?.innerText ?? "")).slice(0, 160)}`));
+  await go("/spending?q=bakery");
+  const wrapped = await page.evaluate(() => document.body.innerText.replace(/\s+/g, " "));
+  /corner bakery card/i.test(wrapped) ? ok("PDF import keeps a wrapped description") : note(`[${label}] wrapped description missing: ${wrapped.match(/.{0,60}bakery.{0,80}/i)?.[0] ?? wrapped.slice(-300)}`);
+  await go("/spending?q=bookshop");
+  const pdfAmounts = await page.evaluate(() => document.body.innerText);
+  /12[.,]40/.test(pdfAmounts) && /5[.,]00/.test(pdfAmounts) ? ok("PDF import reads money out and money in") : note(`[${label}] PDF amounts not shown`);
+  await go("/accounts");
   await shot("07-accounts");
 
   // Sample data

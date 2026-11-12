@@ -29,7 +29,7 @@ npm run lint
 | Area | What it does | Code |
 | --- | --- | --- |
 | Accounts | Sign up, sign in, password reset, rate limiting, sessions, account deletion, data download | `src/lib/auth.ts`, `src/lib/actions/auth.ts`, `src/lib/actions/settings.ts` |
-| Transactions | Bank connection (Plaid), CSV import from any bank, sample data, duplicate protection | `src/lib/plaid.ts`, `src/lib/csv.ts`, `src/lib/demo.ts`, `src/lib/data.ts` |
+| Transactions | Bank connection (Plaid), CSV and PDF statement import, sample data, duplicate protection | `src/lib/plaid.ts`, `src/lib/csv.ts`, `src/lib/pdf-statement.ts`, `src/lib/demo.ts`, `src/lib/data.ts` |
 | Spending | Categories, monthly totals, regular payments, the transaction sheet, Excel export | `src/lib/categories.ts`, `src/lib/spending.ts`, `src/app/api/export` |
 | Savings insights | Calculated from transactions; rewritten by AI when a key is set | `src/lib/insights.ts`, `src/lib/ai.ts` |
 | Investor profile | Ten questions scored into capacity and tolerance, with hard limits | `src/lib/risk.ts` |

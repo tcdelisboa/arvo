@@ -70,7 +70,7 @@ export default async function OverviewPage() {
               </form>
             </div>
             <p className="mt-5 flex items-center gap-2 text-[13.5px] text-ink-3">
-              <FileSpreadsheet size={15} /> A CSV export from any bank works.
+              <FileSpreadsheet size={15} /> A CSV or PDF statement from any bank works.
             </p>
           </Panel>
         </div>

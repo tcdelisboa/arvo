@@ -55,18 +55,24 @@ const MAX_BYTES = 5 * 1024 * 1024;
 export async function importStatement(_prev: ImportState, formData: FormData): Promise<ImportState> {
   const user = await requireUser();
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose a CSV file to import." };
+  if (!(file instanceof File) || file.size === 0) return { error: "Choose a statement to import, as a CSV or PDF file." };
   if (file.size > MAX_BYTES) return { error: "That file is larger than 5 MB. Export a shorter period and try again." };
-  if (/\.(xlsx?|pdf|ods|numbers)$/i.test(file.name)) {
-    return { error: "That looks like a spreadsheet or PDF. In your bank's website, choose CSV as the export format." };
+  if (/\.(xlsx?|ods|numbers)$/i.test(file.name)) {
+    return { error: "That looks like a spreadsheet. In your bank's website, choose CSV or PDF as the export format." };
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  // Most banks export UTF-8; some still use Windows-1252. Fall back if decoding left replacement characters.
-  let text = new TextDecoder("utf-8").decode(buffer);
-  if (text.includes("�")) text = new TextDecoder("windows-1252").decode(buffer);
-
-  const parsed = parseStatement(text);
+  const isPdf = buffer.subarray(0, 5).toString("latin1") === "%PDF-";
+  let parsed;
+  if (isPdf) {
+    const { readPdfStatement } = await import("../pdf-read");
+    parsed = await readPdfStatement(new Uint8Array(buffer));
+  } else {
+    // Most banks export UTF-8; some still use Windows-1252. Fall back if decoding left replacement characters.
+    let text = new TextDecoder("utf-8").decode(buffer);
+    if (text.includes("\ufffd")) text = new TextDecoder("windows-1252").decode(buffer);
+    parsed = parseStatement(text);
+  }
   if (parsed.error) return { error: parsed.error };
 
   const rawName = String(formData.get("name") ?? "").trim();
@@ -85,6 +91,7 @@ export async function importStatement(_prev: ImportState, formData: FormData): P
   const parts = [`Imported ${inserted} ${inserted === 1 ? "transaction" : "transactions"} into ${name}.`];
   if (already > 0) parts.push(`${already} were already there and were skipped.`);
   if (parsed.skipped > 0) parts.push(`${parsed.skipped} rows had no date or amount and were ignored.`);
+  if (isPdf) parts.push("PDFs are read from the page layout, so check a few amounts in Spending against your statement.");
   return { ok: parts.join(" ") };
 }
 

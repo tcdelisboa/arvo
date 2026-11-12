@@ -25,7 +25,7 @@ export function ImportForm() {
             <FileSpreadsheet size={19} />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-[14.5px] font-medium text-ink">{fileName ?? "Choose a CSV file"}</span>
+            <span className="block truncate text-[14.5px] font-medium text-ink">{fileName ?? "Choose a CSV or PDF file"}</span>
             <span className="block text-[13px] text-ink-3">Up to 5 MB. Any bank, any language.</span>
           </span>
           <input
@@ -33,7 +33,7 @@ export function ImportForm() {
             id="file"
             name="file"
             type="file"
-            accept=".csv,.txt,.tsv,text/csv,text/plain"
+            accept=".csv,.txt,.tsv,.pdf,text/csv,text/plain,application/pdf"
             required
             className="sr-only"
             onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}

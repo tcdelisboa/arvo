@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // These packages ship native/WASM assets or large CJS bundles that must be
   // loaded from node_modules at runtime instead of being bundled.
-  serverExternalPackages: ["@electric-sql/pglite", "exceljs", "postgres"],
+  serverExternalPackages: ["@electric-sql/pglite", "exceljs", "postgres", "unpdf"],
   experimental: {
     serverActions: { bodySizeLimit: "6mb" },
   },
