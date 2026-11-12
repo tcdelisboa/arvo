@@ -25,8 +25,8 @@ export function ImportForm() {
             <FileSpreadsheet size={19} />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-[14.5px] font-medium text-ink">{fileName ?? "Choose a CSV or PDF file"}</span>
-            <span className="block text-[13px] text-ink-3">Up to 5 MB. Any bank, any language.</span>
+            <span className="block truncate text-[14.5px] font-medium text-ink">{fileName ?? "Choose CSV or PDF files"}</span>
+            <span className="block text-[13px] text-ink-3">Several at once is fine: up to 24 files, 5 MB each.</span>
           </span>
           <input
             ref={input}
@@ -34,9 +34,13 @@ export function ImportForm() {
             name="file"
             type="file"
             accept=".csv,.txt,.tsv,.pdf,text/csv,text/plain,application/pdf"
+            multiple
             required
             className="sr-only"
-            onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+            onChange={(e) => {
+              const chosen = e.target.files;
+              setFileName(!chosen?.length ? null : chosen.length === 1 ? chosen[0].name : `${chosen.length} files chosen`);
+            }}
           />
         </label>
       </div>

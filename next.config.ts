@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
   // loaded from node_modules at runtime instead of being bundled.
   serverExternalPackages: ["@electric-sql/pglite", "exceljs", "postgres", "unpdf"],
   experimental: {
-    serverActions: { bodySizeLimit: "6mb" },
+    serverActions: { bodySizeLimit: "45mb" },
   },
   turbopack: {
     rules: {

@@ -154,6 +154,28 @@ async function run(label, viewport) {
   await go("/spending?q=bookshop");
   const pdfAmounts = await page.evaluate(() => document.body.innerText);
   /12[.,]40/.test(pdfAmounts) && /5[.,]00/.test(pdfAmounts) ? ok("PDF import reads money out and money in") : note(`[${label}] PDF amounts not shown`);
+  // Several files at once, one of them a PDF with the value date printed between the description and the amount.
+  await go("/accounts");
+  const pdfTwo = path.join(OUT, `statement-two-${label}.pdf`);
+  const printerTwo = await browser.newPage();
+  await printerTwo.setContent(`<meta charset="utf-8"><style>body{font:11px Arial;margin:30px}table{border-collapse:collapse;width:100%}td,th{padding:4px 6px;text-align:left}.n{text-align:right}</style>
+    <h1>Banco Exemplo</h1><p>Extracto de Setembro de 2026</p>
+    <table><tr><th>Data<br>lanç.</th><th>Descritivo</th><th>Data<br>valor</th><th class="n">Valor</th><th class="n">Saldo</th></tr>
+    <tr><td></td><td>SALDO INICIAL</td><td></td><td class="n"></td><td class="n">100,00</td></tr>
+    <tr><td>02/09</td><td>Compra 111 CAFE NORTE</td><td>02/09</td><td class="n">-4,00</td><td class="n">96,00</td></tr>
+    <tr><td>05/09</td><td>Compra 111 LIVRARIA SUL</td><td>05/09</td><td class="n">-16,00</td><td class="n">80,00</td></tr></table>`);
+  await printerTwo.pdf({ path: pdfTwo, format: "A4" });
+  await printerTwo.close();
+  const csvTwo = path.join(OUT, `statement-two-${label}.csv`);
+  await writeFile(csvTwo, "Date,Description,Amount\n2026-09-11,FLOWER SHOP,-7.50\n");
+  const input4 = await page.$("input[type=file]");
+  await input4.uploadFile(pdfTwo, csvTwo);
+  await page.type("#name", "Two files");
+  await clickText("Import statement", "button");
+  await page.waitForFunction(() => document.body.innerText.includes("Imported 3 transactions from 2 files into Two files"), { timeout: 20000 }).then(() => ok("several statements import together"), async () => note(`[${label}] multi-file import message missing: ${(await page.evaluate(() => document.querySelector("form")?.innerText ?? "")).slice(0, 200)}`));
+  await go("/spending?q=cafe norte");
+  const cafe = await page.evaluate(() => document.body.innerText);
+  /4[.,]00/.test(cafe) && !/96[.,]00/.test(cafe) ? ok("PDF import takes the amount, not the running balance") : note(`[${label}] PDF amount looks wrong for CAFE NORTE`);
   await go("/accounts");
   await shot("07-accounts");
 

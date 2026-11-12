@@ -119,6 +119,33 @@ describe("PDF statements", () => {
     expect(rows).toEqual(["2026-10-02 -350 CAFE", "2026-10-03 -210 PADARIA"]);
   });
 
+  it("reads a statement with the value date between the description and the amount", () => {
+    // Heading stacked on two lines, so "valor" under the second "Data" looks like the amount heading.
+    const stacked = [line(1, ["Data", 30, 50], ["Data", 330, 350]), line(1, ["lanç.", 30, 55], ["Descritivo", 80, 130], ["valor", 330, 355], ["Valor", 430, 455], ["Saldo", 530, 555])];
+    const single = [line(1, ["Data lanç.", 30, 75], ["Descritivo", 80, 130], ["Data valor", 320, 365], ["Valor", 430, 455], ["Saldo", 530, 555])];
+    const body = [
+      line(1, ["SALDO INICIAL", 80, 150], ["350,48", 525, 555]),
+      line(1, ["01/09", 30, 55], ["Compra 8453186 CAFE CENTRAL", 80, 240], ["01/09", 330, 355], ["-5,00", 432, 455], ["345,48", 525, 555]),
+      line(1, ["01/09", 30, 55], ["Compra 8453186 MERCADO 623, RUA", 80, 260], ["01/09", 330, 355], ["-21,09", 428, 455], ["324,39", 525, 555]),
+      line(1, ["07/09", 30, 55], ["Trf a credito sepa+ - EMPRESA X -", 80, 270], ["07/09", 330, 355], ["2.168,00", 420, 455], ["2.492,39", 518, 555]),
+      line(1, ["2120004835202", 80, 150]),
+      line(1, ["07/09", 30, 55], ["Compra 8453186 LOJA 3908", 80, 220], ["07/09", 330, 355], ["-40,00", 428, 455], ["2.452,39", 518, 555]),
+      line(1, ["Extracto de Setembro de 2026", 30, 200]),
+    ];
+    const expected = [
+      "2026-09-01 -500 Compra 8453186 CAFE CENTRAL",
+      "2026-09-01 -2109 Compra 8453186 MERCADO 623, RUA",
+      "2026-09-07 216800 Trf a credito sepa+ - EMPRESA X -",
+      "2026-09-07 -4000 Compra 8453186 LOJA 3908",
+    ];
+    expect(amounts([...stacked, ...body])).toEqual(expected);
+    expect(amounts([...single, ...body])).toEqual(expected);
+    expect(amounts(body)).toEqual(expected);
+    // The same statement without a balance column.
+    const noBalance = [...stacked, ...body].map((row) => ({ ...row, cells: row.cells.filter((cell) => cell.x < 500) }));
+    expect(amounts(noBalance)).toEqual(expected);
+  });
+
   it("explains a scan, and a PDF with no transactions", () => {
     expect(parsePdfStatement([], TODAY).error).toMatch(/scan/);
     expect(parsePdfStatement([line(1, ["Terms and conditions of your account", 30, 300])], TODAY).error).toMatch(/could not find/);

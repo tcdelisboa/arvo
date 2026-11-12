@@ -23,7 +23,18 @@ type Column = { role: Role; left: number; right: number };
 type Token = { cents: number; sign: -1 | 0 | 1; start: number; end: number; left: number; right: number };
 type Draft = {
   date: string;
-  description: string;
+  /** The line's text and where the description starts, so the description can be cut again once the layout is known. */
+  text: string;
+  cursor: number;
+  /** The run of money that ends the line, left to right. */
+  run: Token[];
+  /** Money headings in force when the line was read. */
+  money: Column[];
+  /** Description taken from the line itself, or from the line above when it wraps around the date. */
+  head: string;
+  wrapped: boolean;
+  /** Lines of description that follow the payment. */
+  tail: string;
   cents: number;
   /** 0 until the direction is known. */
   sign: -1 | 0 | 1;
@@ -222,10 +233,29 @@ export function parsePdfStatement(lines: PdfLine[], today = new Date()): ParsedS
   let columns: Column[] | null = null;
   let opening: number | null = null;
   let skipped = 0;
-  let explicitSigns = false;
+  type Above = { text: string; page: number; x: number; draft: Draft | null };
   let last: { draft: Draft; page: number; x: number; extra: number } | null = null;
   // The text-only line just above the current one, and the payment it was added to, if any.
-  let above: { text: string; page: number; x: number; draft: Draft | null } | null = null;
+  let above: Above | null = null;
+
+  const signed = (token: Token) => token.cents * (token.sign < 0 ? -1 : 1);
+  /** The description: the text between the date and the first number in use, without a value date at its end. */
+  const cut = (draft: Draft, firstUsed: Token | undefined) => {
+    let head = draft.text.slice(draft.cursor, firstUsed ? firstUsed.start : draft.text.length).replace(/\s+/g, " ").trim();
+    // "CAFE CENTRAL 01/09": the value date printed between the description and the amount.
+    const space = head.lastIndexOf(" ");
+    const word = head.slice(space + 1);
+    if (dateAt(word)?.length === word.length) head = head.slice(0, Math.max(0, space)).trim();
+    return head;
+  };
+  /** Which of the line's numbers to use when there are no headings to go by, or more numbers than headings. */
+  const provisional = (run: Token[], money: Column[]) => {
+    let used = run;
+    if (money.length) {
+      while (used.length > Math.max(1, money.length) && !nearest(used[0], money)) used = used.slice(1);
+    }
+    return used.length > 2 && !money.length ? used.slice(-2) : used;
+  };
 
   for (const line of lines) {
     if (drafts.length >= MAX_ROWS) break;
@@ -244,19 +274,21 @@ export function parsePdfStatement(lines: PdfLine[], today = new Date()): ParsedS
     if (!first) {
       const tokens = moneyIn(text, xAt, 0);
       if (OPENING.test(lower) && tokens.length) {
-        opening = tokens[tokens.length - 1].cents * (tokens[tokens.length - 1].sign < 0 ? -1 : 1);
+        opening = signed(tokens[tokens.length - 1]);
         last = null;
         above = null;
         continue;
       }
-      const wording = !tokens.length && text.length <= 70 && !NOISE.test(lower) && !NOT_A_PAYMENT.test(lower);
-      // A second line of the payment's description: starts under the first, carries no money.
+      // Wording only: no money, has letters, and is not a footer or a balance line.
+      const wording = !tokens.length && /[A-Za-z]{2}/.test(text) && text.length <= 70 && !NOISE.test(lower) && !NOT_A_PAYMENT.test(lower);
+      // A second line of the payment's description: starts under the first.
       if (wording && last && last.page === line.page && last.extra < 2 && Math.abs((line.cells[0]?.x ?? 0) - last.x) <= 24) {
-        last.draft.description = `${last.draft.description} ${text.trim()}`.slice(0, 200);
+        last.draft.tail = `${last.draft.tail} ${text.trim()}`.trim().slice(0, 160);
         last.extra += 1;
         above = { text: text.trim(), page: line.page, x: line.cells[0]?.x ?? 0, draft: last.draft };
       } else {
-        last = null;
+        // A line of digits (a reference number) under a payment does not end its description.
+        if (!(last && !/[A-Za-z]{2}/.test(text) && !tokens.length)) last = null;
         above = wording ? { text: text.trim(), page: line.page, x: line.cells[0]?.x ?? 0, draft: null } : null;
       }
       continue;
@@ -278,61 +310,29 @@ export function parsePdfStatement(lines: PdfLine[], today = new Date()): ParsedS
       trailing.unshift(tokens[i]);
       end = tokens[i].start;
     }
+    const run = trailing.length ? trailing : tokens.slice(-2);
     const money = columns?.filter((column) => ["amount", "debit", "credit", "balance"].includes(column.role)) ?? [];
-    let used = trailing.length ? trailing : tokens.slice(-2);
-    // Money that ends the description ("NETFLIX 12.99 EUR") runs straight into the amounts.
-    // Keep only what sits under a money heading, or the last two numbers when there are no headings.
-    if (money.length) {
-      while (used.length > 1 && !nearest(used[0], money)) used = used.slice(1);
-    } else if (used.length > 2) {
-      used = used.slice(-2);
-    }
-    const descriptionEnd = used.length ? used[0].start : text.length;
-    let description = text.slice(cursor, descriptionEnd).replace(/\s+/g, " ").trim();
-    let descriptionX = xAt(cursor + (text.slice(cursor).match(/^\s+/)?.[0].length ?? 0));
-    // Some statements wrap the description around the date: its first line sits just above.
-    if (!description && above && above.page === line.page) {
-      description = above.text;
-      descriptionX = above.x;
-      if (above.draft?.description.endsWith(above.text)) {
-        above.draft.description = above.draft.description.slice(0, -above.text.length).trim() || "Payment";
-      }
-    }
+    const before: Above | null = above;
     last = null;
     above = null;
 
-    if (!date || !used.length) {
+    if (!date || !run.length) {
       skipped += 1;
       continue;
     }
-    if (NOT_A_PAYMENT.test(plain(description)) || (!description && used.length === 1 && OPENING.test(lower))) continue;
 
-    let amount: Token | null = null;
-    let sign: -1 | 0 | 1 = 0;
-    let balance: number | null = null;
-
-    if (money.length) {
-      for (const token of used) {
-        const column = nearest(token, money);
-        if (!column) continue;
-        if (column.role === "balance") balance = token.cents * (token.sign < 0 ? -1 : 1);
-        else if (!amount || column.role !== "amount") {
-          amount = token;
-          sign = column.role === "debit" ? -1 : column.role === "credit" ? 1 : token.sign;
-        }
-      }
+    const draft: Draft = { date, text, cursor, run, money, head: "", wrapped: false, tail: "", cents: 0, sign: 0, balance: null };
+    draft.head = cut(draft, provisional(run, money)[0]);
+    let descriptionX = xAt(cursor + (text.slice(cursor).match(/^\s+/)?.[0].length ?? 0));
+    // Some statements wrap the description around the date: its first line sits just above.
+    if (!draft.head && before && before.page === line.page) {
+      draft.head = before.text;
+      draft.wrapped = true;
+      descriptionX = before.x;
+      if (before.draft?.tail.endsWith(before.text)) before.draft.tail = before.draft.tail.slice(0, -before.text.length).trim();
     }
-    if (!amount) {
-      // No headings to go by: the last number is the balance when there are two or more.
-      const picked = used.length >= 2 ? used[used.length - 2] : used[0];
-      amount = picked;
-      sign = picked.sign;
-      balance = used.length >= 2 ? used[used.length - 1].cents * (used[used.length - 1].sign < 0 ? -1 : 1) : balance;
-    }
-    if (amount.sign !== 0) explicitSigns = true;
-    if (amount.cents === 0) continue;
+    if (NOT_A_PAYMENT.test(plain(draft.head)) || (!draft.head && run.length === 1 && OPENING.test(lower))) continue;
 
-    const draft: Draft = { date, description: description || "Payment", cents: amount.cents, sign, balance };
     drafts.push(draft);
     last = { draft, page: line.page, x: descriptionX, extra: 0 };
   }
@@ -345,47 +345,117 @@ export function parsePdfStatement(lines: PdfLine[], today = new Date()): ParsedS
     };
   }
 
+  // Does the last number on each line behave like a running balance, with the number before it as the amount?
+  // If the balances add up from one line to the next, that settles the layout whatever the headings say.
+  const pair = (draft: Draft) => (draft.run.length >= 2 ? { amount: draft.run[draft.run.length - 2], balance: signed(draft.run[draft.run.length - 1]) } : null);
+  const chained = (i: number, j: number) => {
+    const here = drafts[i] ? pair(drafts[i]) : null;
+    const there = drafts[j] ? pair(drafts[j]) : null;
+    return !!here && !!there && Math.abs(Math.abs(here.balance - there.balance) - here.amount.cents) <= 1;
+  };
+  const paired = drafts.filter((draft) => pair(draft)).length;
+  let ascending = 0;
+  let descending = 0;
+  for (let i = 0; i < drafts.length; i++) {
+    if (chained(i, i - 1)) ascending += 1;
+    if (chained(i, i + 1)) descending += 1;
+  }
+  const step = ascending >= descending ? -1 : 1;
+  const balanced = paired >= 3 && Math.max(ascending, descending) >= 0.6 * (paired - 1);
+
+  drafts.forEach((draft, i) => {
+    let amount: Token | null = null;
+    let sign: -1 | 0 | 1 = 0;
+    let used = provisional(draft.run, draft.money);
+    const both = pair(draft);
+
+    if (balanced && both) {
+      amount = both.amount;
+      draft.balance = both.balance;
+      used = draft.run.slice(-2);
+      // The balance going up means money came in, whatever sign is printed.
+      const other = drafts[i + step] ? pair(drafts[i + step])?.balance : step === -1 && i === 0 ? opening : null;
+      const change = other === null || other === undefined ? null : both.balance - other;
+      sign = change !== null && Math.abs(Math.abs(change) - amount.cents) <= 1 ? (change > 0 ? 1 : -1) : amount.sign;
+    } else if (draft.money.length) {
+      for (const token of used) {
+        const column = nearest(token, draft.money);
+        if (!column) continue;
+        if (column.role === "balance") draft.balance = signed(token);
+        else if (!amount || column.role !== "amount") {
+          amount = token;
+          sign = column.role === "debit" ? -1 : column.role === "credit" ? 1 : token.sign;
+        }
+      }
+    }
+    if (!amount) {
+      // No headings to go by: the last number is the balance when there are two or more.
+      amount = used.length >= 2 ? used[used.length - 2] : used[0];
+      sign = amount.sign;
+      if (used.length >= 2) draft.balance = signed(used[used.length - 1]);
+    }
+    // A heading can still say which way the money went when nothing else does.
+    if (sign === 0 && draft.money.length) {
+      const role = nearest(amount, draft.money)?.role;
+      if (role === "debit") sign = -1;
+      if (role === "credit") sign = 1;
+    }
+    draft.cents = amount.cents;
+    draft.sign = sign;
+    if (!draft.wrapped) draft.head = cut(draft, used[0].start <= amount.start ? used[0] : amount);
+  });
+
   // Direction for amounts printed without a sign.
+  const explicitSigns = drafts.some((draft) => draft.run.some((token) => token.sign !== 0));
   const undecided = drafts.filter((draft) => draft.sign === 0);
   if (undecided.length) {
-    if (explicitSigns) {
+    if (explicitSigns && !balanced) {
       // Money out carries a minus in this statement, so a bare number is money in.
       for (const draft of undecided) draft.sign = 1;
     } else {
-      // The balance goes up when money comes in. Statements run oldest first or newest first: use whichever fits.
-      const fits = (i: number, j: number) => {
-        const a = drafts[i]?.balance;
-        const b = drafts[j]?.balance;
-        return a !== null && a !== undefined && b !== null && b !== undefined && Math.abs(Math.abs(a - b) - drafts[i].cents) <= 1;
-      };
-      let ascending = 0;
-      let descending = 0;
-      for (let i = 0; i < drafts.length; i++) {
-        if (fits(i, i - 1)) ascending += 1;
-        if (fits(i, i + 1)) descending += 1;
+      if (!balanced) {
+        // Balances found through the headings can still give the direction.
+        const fits = (i: number, j: number) => {
+          const a = drafts[i]?.balance;
+          const b = drafts[j]?.balance;
+          return a !== null && a !== undefined && b !== null && b !== undefined && Math.abs(Math.abs(a - b) - drafts[i].cents) <= 1;
+        };
+        let up = 0;
+        let down = 0;
+        for (let i = 0; i < drafts.length; i++) {
+          if (fits(i, i - 1)) up += 1;
+          if (fits(i, i + 1)) down += 1;
+        }
+        if (up + down > 0) {
+          const direction = up >= down ? -1 : 1;
+          drafts.forEach((draft, i) => {
+            if (draft.sign !== 0 || draft.balance === null) return;
+            const other = drafts[i + direction]?.balance ?? (direction === -1 && i === 0 ? opening : null);
+            if (other === null || other === undefined) return;
+            const change = draft.balance - other;
+            if (Math.abs(Math.abs(change) - draft.cents) <= 1) draft.sign = change > 0 ? 1 : -1;
+          });
+        }
       }
-      if (ascending + descending > 0) {
-        const step = ascending >= descending ? -1 : 1;
-        drafts.forEach((draft, i) => {
-          if (draft.sign !== 0 || draft.balance === null) return;
-          const other = drafts[i + step]?.balance ?? (step === -1 && i === 0 ? opening : null);
-          if (other === null || other === undefined) return;
-          const change = draft.balance - other;
-          if (Math.abs(Math.abs(change) - draft.cents) <= 1) draft.sign = change > 0 ? 1 : -1;
-        });
-      }
-      // Whatever is left: go by the wording, and otherwise treat it as money out.
+      // Whatever is left: a printed plus elsewhere means bare numbers are money in; otherwise go by the wording.
       for (const draft of drafts) {
-        if (draft.sign === 0) draft.sign = MONEY_IN.test(plain(draft.description)) ? 1 : -1;
+        if (draft.sign !== 0) continue;
+        if (explicitSigns) draft.sign = 1;
+        else draft.sign = MONEY_IN.test(plain(`${draft.head} ${draft.tail}`)) ? 1 : -1;
       }
     }
   }
 
-  const rows: ParsedRow[] = drafts.map((draft) => ({
-    date: draft.date,
-    description: draft.description,
-    amountCents: draft.cents * (draft.sign < 0 ? -1 : 1),
-  }));
+  const rows: ParsedRow[] = drafts
+    .filter((draft) => draft.cents !== 0)
+    .map((draft) => ({
+      date: draft.date,
+      description: `${draft.head} ${draft.tail}`.replace(/\s+/g, " ").trim().slice(0, 200) || "Payment",
+      amountCents: draft.cents * (draft.sign < 0 ? -1 : 1),
+    }));
+  if (!rows.length) {
+    return { rows: [], skipped, error: "Arvo could not find any transactions in this PDF. Download it from your bank as CSV instead." };
+  }
   return { rows, skipped };
 }
 

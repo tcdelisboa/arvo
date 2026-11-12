@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "../auth";
 import { q } from "../db";
 import { isCategory } from "../categories";
-import { parseStatement } from "../csv";
+import { parseStatement, type ParsedRow } from "../csv";
 import { createAccount, insertTransactions } from "../data";
 import { generateDemoRows, seedFrom } from "../demo";
 import { isCurrency } from "../format";
@@ -52,47 +52,79 @@ export async function removeAccount(formData: FormData): Promise<void> {
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
+const MAX_FILES = 24;
+const MAX_TOTAL_BYTES = 40 * 1024 * 1024;
+
+/** Import one or more bank statements (CSV or PDF) into one account. */
 export async function importStatement(_prev: ImportState, formData: FormData): Promise<ImportState> {
   const user = await requireUser();
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose a statement to import, as a CSV or PDF file." };
-  if (file.size > MAX_BYTES) return { error: "That file is larger than 5 MB. Export a shorter period and try again." };
-  if (/\.(xlsx?|ods|numbers)$/i.test(file.name)) {
-    return { error: "That looks like a spreadsheet. In your bank's website, choose CSV or PDF as the export format." };
+  const files = formData.getAll("file").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+  if (!files.length) return { error: "Choose one or more statements to import, as CSV or PDF files." };
+  if (files.length > MAX_FILES) return { error: `That is ${files.length} files. Import up to ${MAX_FILES} at a time.` };
+  if (files.reduce((sum, file) => sum + file.size, 0) > MAX_TOTAL_BYTES) {
+    return { error: "Those files add up to more than 40 MB. Import them in two or three batches." };
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const isPdf = buffer.subarray(0, 5).toString("latin1") === "%PDF-";
-  let parsed;
-  if (isPdf) {
-    const { readPdfStatement } = await import("../pdf-read");
-    parsed = await readPdfStatement(new Uint8Array(buffer));
-  } else {
-    // Most banks export UTF-8; some still use Windows-1252. Fall back if decoding left replacement characters.
-    let text = new TextDecoder("utf-8").decode(buffer);
-    if (text.includes("\ufffd")) text = new TextDecoder("windows-1252").decode(buffer);
-    parsed = parseStatement(text);
+  const rows: ParsedRow[] = [];
+  const failed: string[] = [];
+  let skipped = 0;
+  let read = 0;
+  let pdfs = 0;
+  for (const file of files) {
+    const label = files.length > 1 ? `${file.name}: ` : "";
+    if (file.size > MAX_BYTES) {
+      failed.push(`${label}That file is larger than 5 MB. Export a shorter period and try again.`);
+      continue;
+    }
+    if (/\.(xlsx?|ods|numbers)$/i.test(file.name)) {
+      failed.push(`${label}That looks like a spreadsheet. In your bank's website, choose CSV or PDF as the export format.`);
+      continue;
+    }
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const isPdf = buffer.subarray(0, 5).toString("latin1") === "%PDF-";
+    let parsed;
+    if (isPdf) {
+      const { readPdfStatement } = await import("../pdf-read");
+      parsed = await readPdfStatement(new Uint8Array(buffer));
+    } else {
+      // Most banks export UTF-8; some still use Windows-1252. Fall back if decoding left replacement characters.
+      let text = new TextDecoder("utf-8").decode(buffer);
+      if (text.includes("\ufffd")) text = new TextDecoder("windows-1252").decode(buffer);
+      parsed = parseStatement(text);
+    }
+    if (parsed.error) {
+      failed.push(`${label}${parsed.error}`);
+      continue;
+    }
+    rows.push(...parsed.rows);
+    skipped += parsed.skipped;
+    read += 1;
+    if (isPdf) pdfs += 1;
   }
-  if (parsed.error) return { error: parsed.error };
+
+  const problems = failed.join(" ");
+  if (!read) return { error: problems };
 
   const rawName = String(formData.get("name") ?? "").trim();
-  const name = (rawName || file.name.replace(/\.[^.]+$/, "") || "Imported account").slice(0, 60);
+  const fallback = files.length === 1 ? files[0].name.replace(/\.[^.]+$/, "") : "Imported statements";
+  const name = (rawName || fallback || "Imported account").slice(0, 60);
   const accountId = await createAccount(user.id, {
     name,
     institution: "Statement import",
     source: "csv",
     externalId: `csv:${name.toLowerCase()}`,
   });
-  const inserted = await insertTransactions(user.id, accountId, parsed.rows, "csv");
+  const inserted = await insertTransactions(user.id, accountId, rows, "csv");
   await markOnboarded(user.id);
   refresh();
 
-  const already = parsed.rows.length - inserted;
-  const parts = [`Imported ${inserted} ${inserted === 1 ? "transaction" : "transactions"} into ${name}.`];
+  const already = rows.length - inserted;
+  const from = read > 1 ? ` from ${read} files` : "";
+  const parts = [`Imported ${inserted} ${inserted === 1 ? "transaction" : "transactions"}${from} into ${name}.`];
   if (already > 0) parts.push(`${already} were already there and were skipped.`);
-  if (parsed.skipped > 0) parts.push(`${parsed.skipped} rows had no date or amount and were ignored.`);
-  if (isPdf) parts.push("PDFs are read from the page layout, so check a few amounts in Spending against your statement.");
-  return { ok: parts.join(" ") };
+  if (skipped > 0) parts.push(`${skipped} rows had no date or amount and were ignored.`);
+  if (pdfs > 0) parts.push("PDFs are read from the page layout, so check a few amounts in Spending against your statement.");
+  return problems ? { ok: parts.join(" "), error: `${failed.length} ${failed.length === 1 ? "file was" : "files were"} not imported. ${problems}` } : { ok: parts.join(" ") };
 }
 
 /** Change one transaction's category and lock it against future automatic changes. */
