@@ -1,26 +1,61 @@
 name: Deploy to Render
 
-# Render does not always pick up pushes to this repository on its own, so this
-# asks it to deploy the newest commit. It needs one repository secret,
-# RENDER_DEPLOY_HOOK: the "Deploy Hook" address from the Render service's
-# Settings page. Without the secret the job does nothing.
+# Render does not pick up pushes to this repository on its own, so this asks
+# it to deploy the newest commit, waits until the site reports that commit,
+# and then checks that the live market data answers from the server.
+#
+# It needs one repository secret, RENDER_DEPLOY_HOOK: the "Deploy Hook"
+# address from the Render service's Settings page. Without it the job still
+# waits, so a deploy started by hand in the Render dashboard is checked too.
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+env:
+  SITE: https://arvo-o9o5.onrender.com
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
       HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
     steps:
       - name: Ask Render to deploy
         run: |
           if [ -z "$HOOK" ]; then
-            echo "RENDER_DEPLOY_HOOK is not set; skipping."
+            echo "RENDER_DEPLOY_HOOK is not set. Waiting for a deploy started by hand in the Render dashboard."
             exit 0
           fi
           curl -fsS --retry 3 --max-time 60 -X POST "$HOOK" > /dev/null
           echo "Deploy requested."
+
+      - name: Wait until the site runs this commit
+        run: |
+          want="${GITHUB_SHA::7}"
+          for attempt in $(seq 1 60); do
+            got=$(curl -fsS --max-time 60 "$SITE/api/health" | jq -r '.version // empty' || true)
+            if [ "$got" = "$want" ]; then
+              echo "The site is running $want."
+              exit 0
+            fi
+            echo "Attempt $attempt: the site reports '${got:-nothing}', waiting for $want."
+            sleep 20
+          done
+          echo "::error::The site never reported commit $want. Nobody deployed it: set RENDER_DEPLOY_HOOK, or use Manual Deploy in Render."
+          exit 1
+
+      - name: Check live market data from the server
+        run: |
+          status=$(curl -fsS --retry 2 --max-time 90 "$SITE/api/markets/status")
+          echo "$status" | jq -r '"mode: \(.mode)", (.checks[] | "\(if .ok then "ok  " else "FAIL" end)  \(.name): \(.note)")'
+          if [ "$(echo "$status" | jq -r '.ok')" != "true" ]; then
+            echo "::error::Live market data is not answering from the server. The app is showing older or sample prices."
+            exit 1
+          fi
