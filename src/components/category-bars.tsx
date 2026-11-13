@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { money } from "@/lib/format";
+import { getI18n } from "@/lib/i18n/server";
 import { categoryLabel } from "@/lib/categories";
 import type { CategoryTotal } from "@/lib/spending";
 
@@ -7,7 +7,7 @@ import type { CategoryTotal } from "@/lib/spending";
  * Spending by category as a ranked bar list. One hue, because the bars show
  * amount, not identity; the label beside each bar says which category it is.
  */
-export function CategoryBars({
+export async function CategoryBars({
   rows,
   currency,
   divisor = 1,
@@ -21,9 +21,10 @@ export function CategoryBars({
   hrefFor?: (category: string) => string;
   limit?: number;
 }) {
+  const { t, f } = await getI18n();
   const shown = limit ? rows.slice(0, limit) : rows;
   const max = Math.max(1, ...shown.map((row) => row.cents));
-  if (!shown.length) return <p className="text-[14px] text-ink-3">No spending in this period.</p>;
+  if (!shown.length) return <p className="text-[14px] text-ink-3">{t("No spending in this period.")}</p>;
 
   return (
     <ul className="space-y-3.5">
@@ -31,9 +32,9 @@ export function CategoryBars({
         const content = (
           <>
             <div className="flex items-baseline justify-between gap-3 text-[14px]">
-              <span className="truncate text-ink">{categoryLabel(row.category)}</span>
+              <span className="truncate text-ink">{t(categoryLabel(row.category))}</span>
               <span className="shrink-0 text-ink-2">
-                <span className="tnum font-medium text-ink">{money(Math.round(row.cents / divisor), currency, { whole: true })}</span>
+                <span className="tnum font-medium text-ink">{f.money(Math.round(row.cents / divisor), currency, { whole: true })}</span>
                 <span className="tnum ml-2 inline-block w-9 text-right text-[12.5px] text-ink-3">{Math.round(row.share * 100)}%</span>
               </span>
             </div>

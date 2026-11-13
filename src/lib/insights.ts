@@ -1,4 +1,5 @@
 import { categoryLabel } from "./categories";
+import { enT, type T } from "./i18n/core";
 import {
   categoryTotals,
   completeMonths,
@@ -30,12 +31,18 @@ export type InsightInput = {
   todayIso: string;
   /** Formats cents for display, e.g. (c) => "€12". */
   fmt: (cents: number) => string;
+  /** Translator for the text; English when left out. */
+  t?: T;
+  /** Formats a whole percentage, e.g. (12) => "12%". */
+  pctFmt?: (whole: number) => string;
 };
 
-const pct = (value: number) => `${Math.round(value * 100)}%`;
 
-export function buildInsights({ txs, todayIso, fmt }: InsightInput): Insight[] {
+export function buildInsights({ txs, todayIso, fmt, t = enT, pctFmt = (n) => `${n}%` }: InsightInput): Insight[] {
   const insights: Insight[] = [];
+  const pct = (value: number) => pctFmt(Math.round(value * 100));
+  const label = (category: string) => t(categoryLabel(category));
+  const lower = (category: string) => label(category).toLowerCase();
   const averages = monthlyAverages(txs, todayIso, 3);
   if (!averages.months.length || averages.spending <= 0) return insights;
 
@@ -43,7 +50,7 @@ export function buildInsights({ txs, todayIso, fmt }: InsightInput): Insight[] {
   const n = months.length;
   const totals = categoryTotals(txs, months);
   const perMonth = (cents: number) => Math.round(cents / n);
-  const span = n === 1 ? "last month" : `the last ${n} months`;
+  const span = n === 1 ? t("last month") : t("the last {n} months", { n });
 
   // 1. Where most of the money goes.
   const top = totals.slice(0, 3);
@@ -51,12 +58,19 @@ export function buildInsights({ txs, todayIso, fmt }: InsightInput): Insight[] {
     const flexible = totals.find((t) => !["housing", "utilities"].includes(t.category));
     insights.push({
       id: "top-categories",
-      title: `${categoryLabel(top[0].category)} is your biggest cost`,
+      title: t("{category} is your biggest cost", { category: label(top[0].category) }),
       body:
-        `Over ${span}, ${top.map((t) => `${categoryLabel(t.category).toLowerCase()} (${pct(t.share)})`).join(", ")} ` +
-        `made up ${top.reduce((s, t) => s + Math.round(t.share * 100), 0)}% of what you spent.` +
+        t("Over {span}, {list} made up {share} of what you spent.", {
+          span,
+          list: top.map((row) => `${lower(row.category)} (${pct(row.share)})`).join(", "),
+          share: pctFmt(top.reduce((sum, row) => sum + Math.round(row.share * 100), 0)),
+        }) +
         (flexible && flexible.category !== top[0].category
-          ? ` Your largest flexible cost is ${categoryLabel(flexible.category).toLowerCase()} at about ${fmt(perMonth(flexible.cents))} a month.`
+          ? " " +
+            t("Your largest flexible cost is {category} at about {amount} a month.", {
+              category: lower(flexible.category),
+              amount: fmt(perMonth(flexible.cents)),
+            })
           : ""),
       saveCents: 0,
       category: top[0].category,
@@ -73,11 +87,11 @@ export function buildInsights({ txs, todayIso, fmt }: InsightInput): Insight[] {
       const save = Math.round(perMonth(dining.cents) * 0.3);
       insights.push({
         id: "dining",
-        title: "Eating out takes a large share of your food budget",
-        body:
-          `You spend about ${fmt(perMonth(dining.cents))} a month on restaurants, delivery and coffee across ` +
-          `${Math.round(dining.count / n)} purchases. That is ${pct(share)} of everything you spend on food. ` +
-          `Cooking for three of those meals out of ten would free up roughly ${fmt(save)} a month.`,
+        title: t("Eating out takes a large share of your food budget"),
+        body: t(
+          "You spend about {amount} a month on restaurants, delivery and coffee across {count} purchases. That is {share} of everything you spend on food. Cooking for three of those meals out of ten would free up roughly {save} a month.",
+          { amount: fmt(perMonth(dining.cents)), count: Math.round(dining.count / n), share: pct(share), save: fmt(save) },
+        ),
         saveCents: save,
         category: "dining",
       });
@@ -93,11 +107,15 @@ export function buildInsights({ txs, todayIso, fmt }: InsightInput): Insight[] {
     const save = cheapestTwo.reduce((sum, r) => sum + r.monthlyCents, 0);
     insights.push({
       id: "subscriptions",
-      title: `${subs.length} subscriptions cost you ${fmt(total * 12)} a year`,
+      title: t("{count} subscriptions cost you {amount} a year", { count: subs.length, amount: fmt(total * 12) }),
       body:
         `${subs.map((r) => `${r.merchant} (${fmt(r.monthlyCents)})`).join(", ")}. ` +
-        `Together that is ${fmt(total)} every month. Cancelling the ${cheapestTwo.length === 1 ? "one" : "two"} you use least ` +
-        `would save about ${fmt(save)} a month, and you can always re-subscribe for a month when something you want comes out.`,
+        t(
+          cheapestTwo.length === 1
+            ? "Together that is {total} every month. Cancelling the one you use least would save about {save} a month, and you can always re-subscribe for a month when something you want comes out."
+            : "Together that is {total} every month. Cancelling the two you use least would save about {save} a month, and you can always re-subscribe for a month when something you want comes out.",
+          { total: fmt(total), save: fmt(save) },
+        ),
       saveCents: save,
       category: "subscriptions",
     });
@@ -122,11 +140,16 @@ export function buildInsights({ txs, todayIso, fmt }: InsightInput): Insight[] {
     if (best) {
       insights.push({
         id: "rising",
-        title: `${categoryLabel(best.category)} jumped last month`,
-        body:
-          `You spent ${fmt(best.now)} on ${categoryLabel(best.category).toLowerCase()} last month, against a usual ` +
-          `${fmt(Math.round(best.usual))}. If that was a one-off, nothing to do. If it is becoming the new normal, ` +
-          `going back to your usual level is worth ${fmt(Math.round(best.now - best.usual))} a month.`,
+        title: t("{category} jumped last month", { category: label(best.category) }),
+        body: t(
+          "You spent {now} on {category} last month, against a usual {usual}. If that was a one-off, nothing to do. If it is becoming the new normal, going back to your usual level is worth {diff} a month.",
+          {
+            now: fmt(best.now),
+            category: lower(best.category),
+            usual: fmt(Math.round(best.usual)),
+            diff: fmt(Math.round(best.now - best.usual)),
+          },
+        ),
         saveCents: Math.round((best.now - best.usual) * 0.5),
         category: best.category,
       });
@@ -141,10 +164,11 @@ export function buildInsights({ txs, todayIso, fmt }: InsightInput): Insight[] {
     const total = perMonth(small.reduce((sum, tx) => sum - tx.amountCents, 0));
     insights.push({
       id: "small",
-      title: "Small purchases add up quietly",
-      body:
-        `You make about ${Math.round(small.length / n)} purchases under ${fmt(700)} each month. ` +
-        `They come to ${fmt(total)} a month, or ${fmt(total * 12)} a year. Halving them is one of the least painful cuts there is.`,
+      title: t("Small purchases add up quietly"),
+      body: t(
+        "You make about {count} purchases under {limit} each month. They come to {total} a month, or {year} a year. Halving them is one of the least painful cuts there is.",
+        { count: Math.round(small.length / n), limit: fmt(700), total: fmt(total), year: fmt(total * 12) },
+      ),
       saveCents: Math.round(total * 0.5),
     });
   }
@@ -154,10 +178,11 @@ export function buildInsights({ txs, todayIso, fmt }: InsightInput): Insight[] {
   if (fees && perMonth(fees.cents) >= 300) {
     insights.push({
       id: "fees",
-      title: "You are paying your bank to hold your money",
-      body:
-        `Account and card fees cost you about ${fmt(perMonth(fees.cents))} a month (${fmt(perMonth(fees.cents) * 12)} a year). ` +
-        `Several banks offer a free current account; switching removes this cost entirely.`,
+      title: t("You are paying your bank to hold your money"),
+      body: t(
+        "Account and card fees cost you about {month} a month ({year} a year). Several banks offer a free current account; switching removes this cost entirely.",
+        { month: fmt(perMonth(fees.cents)), year: fmt(perMonth(fees.cents) * 12) },
+      ),
       saveCents: perMonth(fees.cents),
       category: "fees",
     });
@@ -171,20 +196,28 @@ export function buildInsights({ txs, todayIso, fmt }: InsightInput): Insight[] {
     if (rate < 0) {
       insights.push({
         id: "rate",
-        title: "You are spending more than you earn",
-        body:
-          `On average you spend ${fmt(averages.spending)} a month against ${fmt(averages.income)} coming in. ` +
-          `Before investing anything, the goal is to close that ${fmt(-left)} gap. The ideas above are the fastest way there.`,
+        title: t("You are spending more than you earn"),
+        body: t(
+          "On average you spend {spending} a month against {income} coming in. Before investing anything, the goal is to close that {gap} gap. The ideas above are the fastest way there.",
+          { spending: fmt(averages.spending), income: fmt(averages.income), gap: fmt(-left) },
+        ),
         saveCents: 0,
       });
     } else {
       insights.push({
         id: "rate",
-        title: rate >= 0.2 ? `You keep ${pct(rate)} of your income` : `You keep ${pct(rate)} of your income; 20% is a good target`,
+        title:
+          rate >= 0.2
+            ? t("You keep {share} of your income", { share: pct(rate) })
+            : t("You keep {share} of your income; 20% is a good target", { share: pct(rate) }),
         body:
-          `Needs take ${pct(needs / averages.income)} of your income and wants ${pct(wants / averages.income)}, ` +
-          `leaving ${fmt(left)} a month. A common rule of thumb is 50% needs, 30% wants, 20% saved or invested.` +
-          (rate < 0.2 ? ` Getting to 20% means finding another ${fmt(Math.round(averages.income * 0.2 - left))} a month.` : ""),
+          t(
+            "Needs take {needs} of your income and wants {wants}, leaving {left} a month. A common rule of thumb is 50% needs, 30% wants, 20% saved or invested.",
+            { needs: pct(needs / averages.income), wants: pct(wants / averages.income), left: fmt(left) },
+          ) +
+          (rate < 0.2
+            ? " " + t("Getting to 20% means finding another {amount} a month.", { amount: fmt(Math.round(averages.income * 0.2 - left)) })
+            : ""),
         saveCents: 0,
       });
     }

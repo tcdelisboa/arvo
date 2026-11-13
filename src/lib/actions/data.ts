@@ -10,6 +10,8 @@ import { createAccount, insertTransactions } from "../data";
 import { generateDemoRows, seedFrom } from "../demo";
 import { isCurrency } from "../format";
 import { isGoal } from "../goals";
+import { getI18n } from "../i18n/server";
+import { msg } from "../i18n/core";
 
 export type ImportState = { error?: string; ok?: string } | null;
 
@@ -23,7 +25,7 @@ async function markOnboarded(userId: string) {
 
 async function addSampleData(userId: string) {
   const accountId = await createAccount(userId, {
-    name: "Sample current account",
+    name: msg("Sample current account"),
     institution: "Sample data",
     source: "sample",
     externalId: "sample",
@@ -58,11 +60,12 @@ const MAX_TOTAL_BYTES = 40 * 1024 * 1024;
 /** Import one or more bank statements (CSV or PDF) into one account. */
 export async function importStatement(_prev: ImportState, formData: FormData): Promise<ImportState> {
   const user = await requireUser();
+  const { t } = await getI18n();
   const files = formData.getAll("file").filter((entry): entry is File => entry instanceof File && entry.size > 0);
-  if (!files.length) return { error: "Choose one or more statements to import, as CSV or PDF files." };
-  if (files.length > MAX_FILES) return { error: `That is ${files.length} files. Import up to ${MAX_FILES} at a time.` };
+  if (!files.length) return { error: t("Choose one or more statements to import, as CSV or PDF files.") };
+  if (files.length > MAX_FILES) return { error: t("That is {n} files. Import up to {max} at a time.", { n: files.length, max: MAX_FILES }) };
   if (files.reduce((sum, file) => sum + file.size, 0) > MAX_TOTAL_BYTES) {
-    return { error: "Those files add up to more than 40 MB. Import them in two or three batches." };
+    return { error: t("Those files add up to more than 40 MB. Import them in two or three batches.") };
   }
 
   const rows: ParsedRow[] = [];
@@ -73,11 +76,11 @@ export async function importStatement(_prev: ImportState, formData: FormData): P
   for (const file of files) {
     const label = files.length > 1 ? `${file.name}: ` : "";
     if (file.size > MAX_BYTES) {
-      failed.push(`${label}That file is larger than 5 MB. Export a shorter period and try again.`);
+      failed.push(label + t("That file is larger than 5 MB. Export a shorter period and try again."));
       continue;
     }
     if (/\.(xlsx?|ods|numbers)$/i.test(file.name)) {
-      failed.push(`${label}That looks like a spreadsheet. In your bank's website, choose CSV or PDF as the export format.`);
+      failed.push(label + t("That looks like a spreadsheet. In your bank's website, choose CSV or PDF as the export format."));
       continue;
     }
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -93,7 +96,7 @@ export async function importStatement(_prev: ImportState, formData: FormData): P
       parsed = parseStatement(text);
     }
     if (parsed.error) {
-      failed.push(`${label}${parsed.error}`);
+      failed.push(label + t(parsed.error));
       continue;
     }
     rows.push(...parsed.rows);
@@ -106,8 +109,8 @@ export async function importStatement(_prev: ImportState, formData: FormData): P
   if (!read) return { error: problems };
 
   const rawName = String(formData.get("name") ?? "").trim();
-  const fallback = files.length === 1 ? files[0].name.replace(/\.[^.]+$/, "") : "Imported statements";
-  const name = (rawName || fallback || "Imported account").slice(0, 60);
+  const fallback = files.length === 1 ? files[0].name.replace(/\.[^.]+$/, "") : t("Imported statements");
+  const name = (rawName || fallback || t("Imported account")).slice(0, 60);
   const accountId = await createAccount(user.id, {
     name,
     institution: "Statement import",
@@ -119,12 +122,18 @@ export async function importStatement(_prev: ImportState, formData: FormData): P
   refresh();
 
   const already = rows.length - inserted;
-  const from = read > 1 ? ` from ${read} files` : "";
-  const parts = [`Imported ${inserted} ${inserted === 1 ? "transaction" : "transactions"}${from} into ${name}.`];
-  if (already > 0) parts.push(`${already} were already there and were skipped.`);
-  if (skipped > 0) parts.push(`${skipped} rows had no date or amount and were ignored.`);
-  if (pdfs > 0) parts.push("PDFs are read from the page layout, so check a few amounts in Spending against your statement.");
-  return problems ? { ok: parts.join(" "), error: `${failed.length} ${failed.length === 1 ? "file was" : "files were"} not imported. ${problems}` } : { ok: parts.join(" ") };
+  const parts = [
+    read > 1
+      ? t("Imported {n} transactions from {files} files into {name}.", { n: inserted, files: read, name })
+      : inserted === 1
+        ? t("Imported 1 transaction into {name}.", { name })
+        : t("Imported {n} transactions into {name}.", { n: inserted, name }),
+  ];
+  if (already > 0) parts.push(t("{n} were already there and were skipped.", { n: already }));
+  if (skipped > 0) parts.push(t("{n} rows had no date or amount and were ignored.", { n: skipped }));
+  if (pdfs > 0) parts.push(t("PDFs are read from the page layout, so check a few amounts in Spending against your statement."));
+  const notImported = failed.length === 1 ? t("1 file was not imported.") : t("{n} files were not imported.", { n: failed.length });
+  return problems ? { ok: parts.join(" "), error: `${notImported} ${problems}` } : { ok: parts.join(" ") };
 }
 
 /** Change one transaction's category and lock it against future automatic changes. */

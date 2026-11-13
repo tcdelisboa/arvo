@@ -5,3 +5,5 @@ export const LEGAL = {
   contact: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "[contact email]",
   updated: "11 November 2026",
 };
+
+export const UPDATED_PT = "11 de novembro de 2026";

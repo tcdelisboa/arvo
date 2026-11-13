@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { futureValue } from "@/lib/portfolio";
+import { useI18n } from "./i18n";
 
 const RATE = 0.055;
-const fmt = (value: number) => `€${Math.round(value).toLocaleString("en-GB")}`;
 
 /**
  * The landing page's live demonstration: drag two sliders and watch what a
@@ -13,6 +13,11 @@ const fmt = (value: number) => `€${Math.round(value).toLocaleString("en-GB")}`
 export function GrowthExplorer() {
   const [monthly, setMonthly] = useState(150);
   const [years, setYears] = useState(20);
+  const { t, f, lang } = useI18n();
+  // Brazilian visitors see reais at a comparable scale.
+  const cur = lang === "pt" ? "BRL" : "EUR";
+  const fmt = (value: number) => f.money(Math.round(value) * 100, cur, { whole: true });
+  const yearsText = (n: number) => (n === 1 ? t("{n} year", { n }) : t("{n} years", { n }));
 
   const { points, end, paid } = useMemo(() => {
     const list = Array.from({ length: years + 1 }, (_, year) => ({
@@ -34,31 +39,31 @@ export function GrowthExplorer() {
   return (
     <div className="rounded-[26px] border border-line bg-surface p-6 shadow-[0_30px_80px_-40px_rgb(14_33_29/0.35)] sm:p-8">
       <p className="text-[13.5px] text-ink-3">
-        {fmt(monthly)} a month for {years} {years === 1 ? "year" : "years"} could become
+        {t("{amount} a month for {years} could become", { amount: fmt(monthly), years: yearsText(years) })}
       </p>
       <p className="figure mt-1 text-[52px] leading-none text-ink sm:text-[64px]" aria-live="polite">
         {fmt(end)}
       </p>
       <p className="mt-3 text-[14px] text-ink-2">
-        You put in <span className="tnum font-medium text-ink">{fmt(paid)}</span>. Growth adds{" "}
+        {t("You put in")} <span className="tnum font-medium text-ink">{fmt(paid)}</span>. {t("Growth adds")}{" "}
         <span className="tnum font-medium text-pos">{fmt(growth)}</span>.
       </p>
 
-      <svg viewBox={`0 0 ${W} ${H}`} className="mt-5 block h-auto w-full" role="img" aria-label="Value growing faster than the amount paid in">
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-5 block h-auto w-full" role="img" aria-label={t("Value growing faster than the amount paid in")}>
         <path d={`${path((p) => p.value)}L${W},${H}L0,${H}Z`} fill="var(--s1)" opacity="0.1" />
         <path d={path((p) => p.paid)} fill="none" stroke="var(--s-muted)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         <path d={path((p) => p.value)} fill="none" stroke="var(--s1)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
         <circle cx={W - 5} cy={y(end)} r="5" fill="var(--accent)" stroke="var(--surface)" strokeWidth="2" />
       </svg>
       <ul className="mt-2 flex gap-5 text-[12.5px] text-ink-3">
-        <li className="flex items-center gap-2"><span className="h-0.5 w-4 rounded-full" style={{ background: "var(--s1)" }} /> Value</li>
-        <li className="flex items-center gap-2"><span className="h-0.5 w-4 rounded-full" style={{ background: "var(--s-muted)" }} /> Paid in</li>
+        <li className="flex items-center gap-2"><span className="h-0.5 w-4 rounded-full" style={{ background: "var(--s1)" }} /> {t("Value")}</li>
+        <li className="flex items-center gap-2"><span className="h-0.5 w-4 rounded-full" style={{ background: "var(--s-muted)" }} /> {t("Paid in")}</li>
       </ul>
 
       <div className="mt-6 space-y-4">
         <div>
           <div className="flex items-baseline justify-between text-[13.5px]">
-            <label htmlFor="ge-monthly" className="text-ink-2">Each month</label>
+            <label htmlFor="ge-monthly" className="text-ink-2">{t("Each month")}</label>
             <span className="tnum font-medium text-ink">{fmt(monthly)}</span>
           </div>
           <input
@@ -74,8 +79,8 @@ export function GrowthExplorer() {
         </div>
         <div>
           <div className="flex items-baseline justify-between text-[13.5px]">
-            <label htmlFor="ge-years" className="text-ink-2">For</label>
-            <span className="tnum font-medium text-ink">{years} {years === 1 ? "year" : "years"}</span>
+            <label htmlFor="ge-years" className="text-ink-2">{t("For")}</label>
+            <span className="tnum font-medium text-ink">{yearsText(years)}</span>
           </div>
           <input
             id="ge-years"
@@ -90,7 +95,7 @@ export function GrowthExplorer() {
       </div>
 
       <p className="mt-5 text-[12px] leading-relaxed text-ink-3">
-        An illustration, not a promise. Assumes 5.5% a year before inflation, fees and tax. Investments can fall as well as rise.
+        {t("An illustration, not a promise. Assumes 5.5% a year before inflation, fees and tax. Investments can fall as well as rise.")}
       </p>
     </div>
   );

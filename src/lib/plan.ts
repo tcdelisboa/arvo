@@ -1,3 +1,4 @@
+import { msg } from "./i18n/core";
 import { addMonths } from "./spending";
 
 /**
@@ -22,16 +23,16 @@ export function freeHistoryStart(todayIso: string): string {
 }
 
 export const FREE_FEATURES = [
-  "Import statements from any bank",
-  "Spending by category and regular payments",
-  `The last ${FREE_HISTORY_MONTHS} months of history`,
-  "Investor profile and model portfolio",
-  "Markets, with a fit rating for your profile",
+  msg("Import statements from any bank"),
+  msg("Spending by category and regular payments"),
+  msg("The last {n} months of history"),
+  msg("Investor profile and model portfolio"),
+  msg("Markets, with a fit rating for your profile"),
 ];
 
 export const PLUS_FEATURES = [
-  "Every way to save Arvo finds, with the amount each is worth",
-  "Your full history, however far back it goes",
-  "Export to Excel",
-  "Everything in Free",
+  msg("Every way to save Arvo finds, with the amount each is worth"),
+  msg("Your full history, however far back it goes"),
+  msg("Export to Excel"),
+  msg("Everything in Free"),
 ];

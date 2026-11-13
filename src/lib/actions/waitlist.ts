@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { recordAttempt, tooManyAttempts } from "../auth";
 import { q } from "../db";
 import { isGoal } from "../goals";
+import { msg } from "../i18n/core";
 
 export type WaitlistState = { error?: string; email?: string; done?: boolean } | null;
 
@@ -36,8 +37,8 @@ export async function joinWaitlist(_prev: WaitlistState, formData: FormData): Pr
   }
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  if (!EMAIL.test(email) || email.length > 200) return { error: "Enter a valid email address." };
-  if (await tooManyAttempts("waitlist", "any", 30)) return { error: "Too many sign-ups from this connection. Try again in a few minutes." };
+  if (!EMAIL.test(email) || email.length > 200) return { error: msg("Enter a valid email address.") };
+  if (await tooManyAttempts("waitlist", "any", 30)) return { error: msg("Too many sign-ups from this connection. Try again in a few minutes.") };
   await recordAttempt("waitlist", "any");
 
   await q("INSERT INTO waitlist (email, source) VALUES ($1, $2) ON CONFLICT (email) DO NOTHING", [email, await sourceOf()]);

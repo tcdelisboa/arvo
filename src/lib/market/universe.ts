@@ -95,8 +95,20 @@ export const UNIVERSE: UniverseEntry[] = [
   stock("GALP.LS", "Galp Energia", "Europe", "Energy", "Portugal", 3, "Portuguese oil, gas and fuel retailer."),
   stock("ADYEN.AS", "Adyen", "Europe", "Payments", "Netherlands", 5, "Payment processing for large online and in-store merchants."),
   stock("INGA.AS", "ING Group", "Europe", "Financials", "Netherlands", 3, "Dutch retail and commercial bank."),
+
+  // Brazil (B3, priced in reais)
+  etf("BOVA11.SA", "iShares Ibovespa Fundo de Índice", "Brazilian stocks", "Brazil", 4, "The Ibovespa index: the largest companies listed on B3 in São Paulo.", { group: "Brazil" }),
+  etf("IVVB11.SA", "iShares S&P 500 Fundo de Índice", "US stocks", "United States", 3, "The S&P 500 bought in reais on B3, so it also moves with the dollar.", { group: "Brazil" }),
+  etf("SMAL11.SA", "iShares BM&FBOVESPA Small Cap Fundo de Índice", "Smaller companies", "Brazil", 5, "Smaller companies listed on B3.", { group: "Brazil" }),
+  stock("PETR4.SA", "Petrobras", "Brazil", "Energy", "Brazil", 4, "Brazil's state-controlled oil and gas producer."),
+  stock("VALE3.SA", "Vale", "Brazil", "Mining", "Brazil", 4, "One of the world's largest iron ore miners."),
+  stock("ITUB4.SA", "Itaú Unibanco", "Brazil", "Financials", "Brazil", 3, "The largest private bank in Brazil."),
+  stock("BBAS3.SA", "Banco do Brasil", "Brazil", "Financials", "Brazil", 3, "State-controlled bank with a large farm-lending business."),
+  stock("WEGE3.SA", "WEG", "Brazil", "Industrials", "Brazil", 3, "Electric motors and power equipment sold around the world."),
+  stock("ABEV3.SA", "Ambev", "Brazil", "Consumer staples", "Brazil", 2, "The brewer behind Skol, Brahma and Antarctica."),
+  stock("MGLU3.SA", "Magazine Luiza", "Brazil", "Retail", "Brazil", 5, "Online and in-store retailer."),
 ];
 
 export const UNIVERSE_BY_SYMBOL = new Map(UNIVERSE.map((entry) => [entry.symbol, entry]));
 
-export const GROUPS = ["Funds (ETFs)", "United States", "Europe"] as const;
+export const GROUPS = ["Funds (ETFs)", "United States", "Europe", "Brazil"] as const;

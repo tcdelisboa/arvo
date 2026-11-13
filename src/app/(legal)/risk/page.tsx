@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
+import { getI18n, titled } from "@/lib/i18n/server";
+import { msg } from "@/lib/i18n/core";
 import { LEGAL } from "@/lib/legal";
+import { Portuguese } from "./pt";
 
-export const metadata: Metadata = { title: "Risk notice" };
+export const generateMetadata = titled(msg("Risk notice"));
 
-export default function RiskPage() {
+function English() {
   return (
     <>
       <h1>Risk notice</h1>
@@ -64,4 +66,9 @@ export default function RiskPage() {
       <p className="small">Questions about this notice: {LEGAL.contact}.</p>
     </>
   );
+}
+
+export default async function RiskPage() {
+  const { lang } = await getI18n();
+  return lang === "pt" ? <Portuguese /> : <English />;
 }

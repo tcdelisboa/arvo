@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import { getI18n, titled } from "@/lib/i18n/server";
+import { msg } from "@/lib/i18n/core";
 import { Trash2 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { listAccounts } from "@/lib/data";
@@ -11,9 +12,9 @@ import { BankConnect } from "@/components/bank-connect";
 import { ImportForm } from "@/components/import-form";
 import { SubmitButton } from "@/components/submit-button";
 
-export const metadata: Metadata = { title: "Accounts" };
+export const generateMetadata = titled(msg("Accounts"));
 
-const SOURCE_LABEL = { sample: "Sample data", csv: "Statement import", bank: "Bank connection" } as const;
+const SOURCE_LABEL = { sample: msg("Sample data"), csv: msg("Statement import"), bank: msg("Bank connection") } as const;
 
 export default async function AccountsPage() {
   const user = await requireUser();
@@ -25,32 +26,33 @@ export default async function AccountsPage() {
     ),
   ]);
   const bank = bankEnabled();
+  const { t, f } = await getI18n();
   const hasSample = accounts.some((a) => a.source === "sample");
 
   return (
     <>
-      <PageHeader title="Accounts" lead="Where your transactions come from. Arvo reads them; it can never move money." />
+      <PageHeader title={t("Accounts")} lead={t("Where your transactions come from. Arvo reads them; it can never move money.")} />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel className="lg:col-span-2">
-          <PanelHeader title="Your accounts" />
+          <PanelHeader title={t("Your accounts")} />
           <div className="px-5 pb-5 pt-3 sm:px-6 sm:pb-6">
             {accounts.length ? (
               <ul className="divide-y divide-line">
                 {accounts.map((account) => (
                   <li key={account.id} className="flex flex-wrap items-center justify-between gap-3 py-3.5">
                     <div className="min-w-0">
-                      <p className="truncate text-[15px] font-medium text-ink">{account.name}</p>
+                      <p className="truncate text-[15px] font-medium text-ink">{account.source === "sample" ? t(account.name) : account.name}</p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[13px] text-ink-3">
-                        <Badge tone={account.source === "sample" ? "accent" : "neutral"}>{SOURCE_LABEL[account.source]}</Badge>
-                        <span className="tnum">{account.count.toLocaleString("en-GB")} transactions</span>
+                        <Badge tone={account.source === "sample" ? "accent" : "neutral"}>{t(SOURCE_LABEL[account.source])}</Badge>
+                        <span className="tnum">{account.count === 1 ? t("1 transaction") : t("{n} transactions", { n: f.number(account.count, 0) })}</span>
                       </p>
                     </div>
                     {account.source !== "bank" ? (
                       <form action={removeAccount}>
                         <input type="hidden" name="accountId" value={account.id} />
-                        <SubmitButton variant="danger" size="sm" pendingLabel="Removing">
-                          <Trash2 size={15} /> Remove
+                        <SubmitButton variant="danger" size="sm" pendingLabel={t("Removing")}>
+                          <Trash2 size={15} /> {t("Remove")}
                         </SubmitButton>
                       </form>
                     ) : null}
@@ -58,7 +60,7 @@ export default async function AccountsPage() {
                 ))}
               </ul>
             ) : (
-              <p className="py-2 text-[14.5px] text-ink-2">No accounts yet. Add your transactions below to get started.</p>
+              <p className="py-2 text-[14.5px] text-ink-2">{t("No accounts yet. Add your transactions below to get started.")}</p>
             )}
 
             {items.length ? (
@@ -105,16 +107,13 @@ export default async function AccountsPage() {
         ) : null}
 
         <Panel>
-          <PanelHeader title="Import a statement" note="A CSV or PDF statement from your bank's website or app." />
+          <PanelHeader title={t("Import a statement")} note={t("A CSV or PDF statement from your bank's website or app.")} />
           <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
             <ImportForm />
             <details className="mt-5 text-[13.5px] text-ink-2">
-              <summary className="cursor-pointer font-medium text-ink">How do I get a statement from my bank?</summary>
+              <summary className="cursor-pointer font-medium text-ink">{t("How do I get a statement from my bank?")}</summary>
               <p className="mt-2">
-                Sign in to your bank on a computer, open the list of transactions for your current account, choose the longest
-                period on offer (six months or more works best), and look for Export or Download. CSV is the most reliable; a PDF statement works too, as long as it is the
-                bank&apos;s own file and not a scan or a photo. Arvo works out the columns, dates and decimals on its own, and
-                importing the same file twice never creates duplicates.
+                {t("Sign in to your bank on a computer, open the list of transactions for your current account, choose the longest period on offer (six months or more works best), and look for Export or Download. CSV is the most reliable; a PDF statement works too, as long as it is the bank's own file and not a scan or a photo. Arvo works out the columns, dates and decimals on its own, and importing the same file twice never creates duplicates.")}
               </p>
             </details>
           </div>
@@ -124,13 +123,13 @@ export default async function AccountsPage() {
           <Panel className="lg:col-span-2">
             <div className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
               <div className="max-w-xl">
-                <h2 className="text-[17px] font-semibold text-ink">Just looking?</h2>
+                <h2 className="text-[17px] font-semibold text-ink">{t("Just looking?")}</h2>
                 <p className="mt-0.5 text-[14px] text-ink-2">
-                  Load six months of made-up transactions to see how everything works. You can remove them at any time.
+                  {t("Load six months of made-up transactions to see how everything works. You can remove them at any time.")}
                 </p>
               </div>
               <form action={loadSampleData}>
-                <SubmitButton variant="secondary" pendingLabel="Loading">Load sample data</SubmitButton>
+                <SubmitButton variant="secondary" pendingLabel={t("Loading")}>{t("Load sample data")}</SubmitButton>
               </form>
             </div>
           </Panel>

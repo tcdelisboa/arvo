@@ -6,27 +6,29 @@
  * and that choice is locked so later syncs never overwrite it.
  */
 
+import { msg } from "./i18n/core";
+
 export type CategoryGroup = "needs" | "wants" | "income" | "savings" | "neutral";
 
 export const CATEGORIES = {
-  housing: { label: "Rent & housing", group: "needs" },
-  utilities: { label: "Bills & utilities", group: "needs" },
-  groceries: { label: "Groceries", group: "needs" },
-  transport: { label: "Transport", group: "needs" },
-  health: { label: "Health", group: "needs" },
-  education: { label: "Education", group: "needs" },
-  fees: { label: "Bank fees & interest", group: "needs" },
-  dining: { label: "Eating out", group: "wants" },
-  shopping: { label: "Shopping", group: "wants" },
-  subscriptions: { label: "Subscriptions", group: "wants" },
-  entertainment: { label: "Leisure", group: "wants" },
-  travel: { label: "Travel", group: "wants" },
-  cash: { label: "Cash withdrawals", group: "wants" },
-  other: { label: "Other", group: "wants" },
-  income: { label: "Income", group: "income" },
-  savings: { label: "Savings & investments", group: "savings" },
-  transfers: { label: "Transfers", group: "neutral" },
-} as const satisfies Record<string, { label: string; group: CategoryGroup }>;
+  housing: { label: msg("Rent & housing"), group: "needs" },
+  utilities: { label: msg("Bills & utilities"), group: "needs" },
+  groceries: { label: msg("Groceries"), group: "needs" },
+  transport: { label: msg("Transport"), group: "needs" },
+  health: { label: msg("Health"), group: "needs" },
+  education: { label: msg("Education"), group: "needs" },
+  fees: { label: msg("Bank fees & interest"), group: "needs" },
+  dining: { label: msg("Eating out"), group: "wants" },
+  shopping: { label: msg("Shopping"), group: "wants" },
+  subscriptions: { label: msg("Subscriptions"), group: "wants" },
+  entertainment: { label: msg("Leisure"), group: "wants" },
+  travel: { label: msg("Travel"), group: "wants" },
+  cash: { label: msg("Cash withdrawals"), group: "wants" },
+  other: { label: msg("Other"), group: "wants" },
+  income: { label: msg("Income"), group: "income" },
+  savings: { label: msg("Savings & investments"), group: "savings" },
+  transfers: { label: msg("Transfers"), group: "neutral" },
+} satisfies Record<string, { label: string; group: CategoryGroup }>;
 
 export type Category = keyof typeof CATEGORIES;
 
@@ -37,7 +39,7 @@ export function isCategory(value: unknown): value is Category {
 }
 
 export function categoryLabel(category: string): string {
-  return isCategory(category) ? CATEGORIES[category].label : "Other";
+  return isCategory(category) ? CATEGORIES[category].label : msg("Other");
 }
 
 /** True for categories that count as day-to-day spending. */

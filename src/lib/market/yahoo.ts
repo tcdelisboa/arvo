@@ -1,3 +1,4 @@
+import { msg } from "../i18n/core";
 import "server-only";
 import {
   EMPTY_METRICS,
@@ -520,32 +521,32 @@ export type Statements = {
 
 const STATEMENT_LINES: Record<"income" | "balance" | "cashflow", [string, string, boolean?][]> = {
   income: [
-    ["annualTotalRevenue", "Revenue"],
-    ["annualCostOfRevenue", "Cost of revenue"],
-    ["annualGrossProfit", "Gross profit"],
-    ["annualOperatingExpense", "Operating expenses"],
-    ["annualOperatingIncome", "Operating income"],
-    ["annualEBITDA", "EBITDA"],
-    ["annualPretaxIncome", "Pre-tax income"],
-    ["annualTaxProvision", "Income tax"],
-    ["annualNetIncome", "Net income"],
-    ["annualDilutedEPS", "Diluted EPS", true],
+    ["annualTotalRevenue", msg("Revenue")],
+    ["annualCostOfRevenue", msg("Cost of revenue")],
+    ["annualGrossProfit", msg("Gross profit")],
+    ["annualOperatingExpense", msg("Operating expenses")],
+    ["annualOperatingIncome", msg("Operating income")],
+    ["annualEBITDA", msg("EBITDA")],
+    ["annualPretaxIncome", msg("Pre-tax income")],
+    ["annualTaxProvision", msg("Income tax")],
+    ["annualNetIncome", msg("Net income")],
+    ["annualDilutedEPS", msg("Diluted EPS"), true],
   ],
   balance: [
-    ["annualCashAndCashEquivalents", "Cash and equivalents"],
-    ["annualCurrentAssets", "Current assets"],
-    ["annualTotalAssets", "Total assets"],
-    ["annualCurrentLiabilities", "Current liabilities"],
-    ["annualTotalDebt", "Total debt"],
-    ["annualTotalLiabilitiesNetMinorityInterest", "Total liabilities"],
-    ["annualStockholdersEquity", "Shareholders' equity"],
+    ["annualCashAndCashEquivalents", msg("Cash and equivalents")],
+    ["annualCurrentAssets", msg("Current assets")],
+    ["annualTotalAssets", msg("Total assets")],
+    ["annualCurrentLiabilities", msg("Current liabilities")],
+    ["annualTotalDebt", msg("Total debt")],
+    ["annualTotalLiabilitiesNetMinorityInterest", msg("Total liabilities")],
+    ["annualStockholdersEquity", msg("Shareholders' equity")],
   ],
   cashflow: [
-    ["annualOperatingCashFlow", "Operating cash flow"],
-    ["annualCapitalExpenditure", "Capital expenditure"],
-    ["annualFreeCashFlow", "Free cash flow"],
-    ["annualCashDividendsPaid", "Dividends paid"],
-    ["annualRepurchaseOfCapitalStock", "Share buybacks"],
+    ["annualOperatingCashFlow", msg("Operating cash flow")],
+    ["annualCapitalExpenditure", msg("Capital expenditure")],
+    ["annualFreeCashFlow", msg("Free cash flow")],
+    ["annualCashDividendsPaid", msg("Dividends paid")],
+    ["annualRepurchaseOfCapitalStock", msg("Share buybacks")],
   ],
 };
 

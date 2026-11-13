@@ -1,0 +1,275 @@
+/** Overview, charts, categories, savings ideas, plans, model portfolio, investor profile. */
+export const money: Record<string, string> = {
+  "Hello, {name}": "Olá, {name}",
+  "Your investing plan is ready. Add your spending whenever you want the full picture.":
+    "Seu plano de investimento está pronto. Adicione seus gastos quando quiser ver o quadro completo.",
+  "Two ways to begin. Pick whichever suits you today.": "Dois jeitos de começar. Escolha o que for melhor para você hoje.",
+  "Your investor profile is {name}": "Seu perfil de investidor é {name}",
+  "Start with investing": "Começar pelos investimentos",
+  "See the funds that fit your profile, the share to put into each, and what it could grow into.":
+    "Veja os fundos que combinam com seu perfil, quanto colocar em cada um e no que isso pode se transformar.",
+  "Ten questions about your situation and how you feel about risk. You get your investor profile and a model portfolio. No bank data needed.":
+    "Dez perguntas sobre sua situação e como você lida com risco. Você recebe seu perfil de investidor e uma carteira modelo. Sem precisar de dados do banco.",
+  "Open your portfolio": "Abrir sua carteira",
+  "Browse the markets": "Explorar os mercados",
+  "Add your spending": "Adicionar seus gastos",
+  "Start with your spending": "Começar pelos gastos",
+  "Bring in a statement and Arvo shows where your money goes and checks how much you can really afford to invest.":
+    "Envie um extrato e a Arvo mostra para onde vai seu dinheiro e confere quanto você realmente pode investir.",
+  "Bring in a statement and Arvo shows where your money goes, then what you can afford to invest.":
+    "Envie um extrato e a Arvo mostra para onde vai seu dinheiro e depois quanto você pode investir.",
+  "Add your transactions": "Adicionar suas transações",
+  "Loading": "Carregando",
+  "Try with sample data": "Testar com dados de exemplo",
+  "A CSV or PDF statement from any bank works.": "Funciona com extrato em CSV ou PDF de qualquer banco.",
+  "the last {n} full months": "últimos {n} meses completos",
+  "Where your money stands, and what to do next.": "Como está seu dinheiro e o que fazer agora.",
+  "You are looking at sample data.": "Você está vendo dados de exemplo.",
+  "Add your own": "Adicionar os seus",
+  "These transactions are made up so you can explore.": "Estas transações são inventadas para você explorar.",
+  "Spent in {month} so far": "Gasto em {month} até agora",
+  "A typical month is {amount}": "Um mês típico é {amount}",
+  "Usually left over each month": "Costuma sobrar por mês",
+  "From {amount} coming in": "De {amount} que entram",
+  "No income found yet": "Nenhuma renda encontrada ainda",
+  "Share of income you keep": "Parte da renda que você guarda",
+  "Add an account that receives your salary": "Adicione a conta que recebe seu salário",
+  "Above the 20% rule of thumb": "Acima da regra prática de 20%",
+  "20% is a good target": "20% é uma boa meta",
+  "Money in and out": "Dinheiro que entra e que sai",
+  "Per month": "Por mês",
+  "Where it goes": "Para onde vai",
+  "Monthly average over {period}": "Média mensal: {period}",
+  "All spending": "Todos os gastos",
+  "Your plan": "Seu plano",
+  "{profile} investor": "Investidor {profile}",
+  "Not set up yet": "Ainda não configurado",
+  "Investing each month": "Investindo por mês",
+  "Open portfolio": "Abrir carteira",
+  "Answer ten questions about your situation and how you feel about risk. Arvo works out your investor profile, how much you can afford to invest, and a portfolio to match.":
+    "Responda dez perguntas sobre sua situação e como você lida com risco. A Arvo calcula seu perfil de investidor, quanto você pode investir e uma carteira compatível.",
+  "Ways to save": "Formas de economizar",
+  "Up to {amount} a month": "Até {amount} por mês",
+  "{amount}/mo": "{amount}/mês",
+  "1 way to save with Plus": "1 forma de economizar com o Plus",
+  "{n} ways to save with Plus": "{n} formas de economizar com o Plus",
+  "Savings ideas appear once Arvo has a full month of transactions.": "As ideias de economia aparecem quando a Arvo tiver um mês completo de transações.",
+  "See the details": "Ver os detalhes",
+  "No spending in this period.": "Nenhum gasto neste período.",
+  "Money in": "Entradas",
+  "Money in and spending per month": "Entradas e gastos por mês",
+  "Month": "Mês",
+  "Price from {from} to {to}": "Preço de {from} a {to}",
+  "No price history available.": "Sem histórico de preços disponível.",
+  "Likely value": "Valor provável",
+  "Range of outcomes": "Faixa de resultados",
+  "What you paid in": "O que você investiu",
+  "Projected value over {n} years": "Valor projetado em {n} anos",
+  "Today": "Hoje",
+  "{n}y": "{n}a",
+  "After 1 year": "Depois de 1 ano",
+  "After {n} years": "Depois de {n} anos",
+  "Range": "Faixa",
+  "{low} to {high}": "{low} a {high}",
+  "Bills & utilities": "Contas da casa",
+  "Transport": "Transporte",
+  "Health": "Saúde",
+  "Education": "Educação",
+  "Bank fees & interest": "Tarifas e juros bancários",
+  "Shopping": "Compras",
+  "Leisure": "Lazer",
+  "Travel": "Viagens",
+  "Cash withdrawals": "Saques",
+  "Other": "Outros",
+  "Income": "Renda",
+  "Savings & investments": "Poupança e investimentos",
+  "Transfers": "Transferências",
+  "last month": "o último mês",
+  "the last {n} months": "os últimos {n} meses",
+  "{category} is your biggest cost": "{category} é seu maior gasto",
+  "Over {span}, {list} made up {share} of what you spent.": "Considerando {span}, {list} somaram {share} do que você gastou.",
+  "Your largest flexible cost is {category} at about {amount} a month.": "Seu maior gasto flexível é {category}, com cerca de {amount} por mês.",
+  "Eating out takes a large share of your food budget": "Comer fora leva uma parte grande do seu orçamento de comida",
+  "You spend about {amount} a month on restaurants, delivery and coffee across {count} purchases. That is {share} of everything you spend on food. Cooking for three of those meals out of ten would free up roughly {save} a month.":
+    "Você gasta cerca de {amount} por mês com restaurantes, delivery e café, em {count} compras. Isso é {share} de tudo o que você gasta com comida. Cozinhar três de cada dez dessas refeições liberaria uns {save} por mês.",
+  "{count} subscriptions cost you {amount} a year": "{count} assinaturas custam {amount} por ano",
+  "Together that is {total} every month. Cancelling the one you use least would save about {save} a month, and you can always re-subscribe for a month when something you want comes out.":
+    "Juntas, dão {total} todo mês. Cancelar a que você menos usa economizaria cerca de {save} por mês, e você sempre pode assinar de novo por um mês quando sair algo que queira ver.",
+  "Together that is {total} every month. Cancelling the two you use least would save about {save} a month, and you can always re-subscribe for a month when something you want comes out.":
+    "Juntas, dão {total} todo mês. Cancelar as duas que você menos usa economizaria cerca de {save} por mês, e você sempre pode assinar de novo por um mês quando sair algo que queira ver.",
+  "{category} jumped last month": "{category} disparou no último mês",
+  "You spent {now} on {category} last month, against a usual {usual}. If that was a one-off, nothing to do. If it is becoming the new normal, going back to your usual level is worth {diff} a month.":
+    "Você gastou {now} com {category} no último mês, contra os {usual} de costume. Se foi algo pontual, nada a fazer. Se está virando o novo normal, voltar ao nível de sempre vale {diff} por mês.",
+  "Small purchases add up quietly": "Compras pequenas somam sem você perceber",
+  "You make about {count} purchases under {limit} each month. They come to {total} a month, or {year} a year. Halving them is one of the least painful cuts there is.":
+    "Você faz cerca de {count} compras abaixo de {limit} por mês. Elas somam {total} por mês, ou {year} por ano. Cortar pela metade é um dos cortes menos doloridos que existem.",
+  "You are paying your bank to hold your money": "Você está pagando o banco para guardar seu dinheiro",
+  "Account and card fees cost you about {month} a month ({year} a year). Several banks offer a free current account; switching removes this cost entirely.":
+    "Tarifas de conta e cartão custam cerca de {month} por mês ({year} por ano). Vários bancos oferecem conta gratuita; trocar elimina esse custo.",
+  "You are spending more than you earn": "Você está gastando mais do que ganha",
+  "On average you spend {spending} a month against {income} coming in. Before investing anything, the goal is to close that {gap} gap. The ideas above are the fastest way there.":
+    "Em média você gasta {spending} por mês, contra {income} que entram. Antes de investir, o objetivo é fechar essa diferença de {gap}. As ideias acima são o caminho mais rápido.",
+  "You keep {share} of your income": "Você guarda {share} da sua renda",
+  "You keep {share} of your income; 20% is a good target": "Você guarda {share} da sua renda; 20% é uma boa meta",
+  "Needs take {needs} of your income and wants {wants}, leaving {left} a month. A common rule of thumb is 50% needs, 30% wants, 20% saved or invested.":
+    "Necessidades levam {needs} da sua renda e desejos {wants}, sobrando {left} por mês. Uma regra prática comum é 50% necessidades, 30% desejos e 20% guardado ou investido.",
+  "Getting to 20% means finding another {amount} a month.": "Chegar a 20% significa achar mais {amount} por mês.",
+  "Import statements from any bank": "Importe extratos de qualquer banco",
+  "Spending by category and regular payments": "Gastos por categoria e pagamentos recorrentes",
+  "The last {n} months of history": "Os últimos {n} meses de histórico",
+  "Investor profile and model portfolio": "Perfil de investidor e carteira modelo",
+  "Markets, with a fit rating for your profile": "Mercados, com nota de adequação ao seu perfil",
+  "Every way to save Arvo finds, with the amount each is worth": "Todas as formas de economizar que a Arvo encontrar, com quanto cada uma vale",
+  "Your full history, however far back it goes": "Seu histórico completo, por mais antigo que seja",
+  "Export to Excel": "Exportar para Excel",
+  "Everything in Free": "Tudo do plano Grátis",
+  "Under 0.25% a year": "Menos de 0,25% ao ano",
+  "One fund that owns shares in roughly 3,700 large and mid-sized companies across developed and emerging countries, weighted by size.":
+    "Um único fundo com ações de cerca de 3.700 empresas grandes e médias de países desenvolvidos e emergentes, ponderadas pelo tamanho.",
+  "It is the engine of the plan. You own a slice of the world economy instead of betting on one company, country or sector, and dividends are reinvested for you.":
+    "É o motor do plano. Você tem uma fatia da economia mundial em vez de apostar em uma empresa, país ou setor, e os dividendos são reinvestidos para você.",
+  "It moves with stock markets. A fall of 30% or more in a bad year has happened before and will happen again.":
+    "Ele acompanha as bolsas. Uma queda de 30% ou mais em um ano ruim já aconteceu e vai acontecer de novo.",
+  "Smaller companies": "Empresas menores",
+  "About 0.35% a year": "Cerca de 0,35% ao ano",
+  "Around 3,500 smaller listed companies from developed countries, which the global fund above mostly leaves out.":
+    "Cerca de 3.500 empresas listadas menores de países desenvolvidos, que o fundo global acima quase não inclui.",
+  "Smaller companies have historically grown faster over long periods, and adding them spreads your stocks even wider.":
+    "Empresas menores historicamente cresceram mais rápido em períodos longos, e incluí-las espalha ainda mais suas ações.",
+  "They swing more than large companies and can lag for years at a time.": "Elas oscilam mais do que as grandes e podem ficar para trás por anos seguidos.",
+  "About 0.10% a year": "Cerca de 0,10% ao ano",
+  "Thousands of high-quality loans to governments and large companies worldwide, with currency swings against the euro hedged away.":
+    "Milhares de empréstimos de alta qualidade a governos e grandes empresas do mundo todo, com proteção contra a variação cambial frente ao euro.",
+  "Bonds are the shock absorber. They pay interest and usually fall far less than stocks, which makes the whole plan easier to hold.":
+    "A renda fixa é o amortecedor. Paga juros e costuma cair bem menos do que as ações, o que torna o plano todo mais fácil de manter.",
+  "Bond prices fall when interest rates rise, as they did sharply in 2022.": "Os preços dos títulos caem quando os juros sobem, como aconteceu com força em 2022.",
+  "A fund that pays roughly the euro overnight interest rate, the rate banks lend to each other at.":
+    "Um fundo que rende mais ou menos a taxa overnight do euro, a taxa com que os bancos emprestam entre si.",
+  "It behaves like a savings account inside your investment account: very stable, and it earns whatever short-term interest rates are paying.":
+    "Funciona como uma poupança dentro da sua conta de investimentos: muito estável, e rende o que os juros de curto prazo estiverem pagando.",
+  "It will not grow much. When interest rates are low it may not keep up with inflation.": "Não vai crescer muito. Quando os juros estão baixos, pode não acompanhar a inflação.",
+  "A security backed by physical gold held in a vault in Frankfurt. Each unit represents one gram.":
+    "Um título lastreado em ouro físico guardado em um cofre em Frankfurt. Cada unidade representa um grama.",
+  "Gold often holds its value when stocks and bonds fall together, so a small amount steadies the plan.":
+    "O ouro costuma manter o valor quando ações e renda fixa caem juntas, então uma pequena parte dá estabilidade ao plano.",
+  "It pays no interest or dividends and its price can drift for years. Keep it small.":
+    "Não paga juros nem dividendos e o preço pode ficar parado por anos. Mantenha uma parte pequena.",
+  "Software & cloud": "Software e nuvem",
+  "Maker of Windows, Office and the Azure cloud platform.": "Fabricante do Windows, do Office e da plataforma de nuvem Azure.",
+  "A large, highly profitable business with recurring subscription revenue.": "Um negócio grande e muito lucrativo, com receita recorrente de assinaturas.",
+  "Priced for strong growth; disappointment is punished quickly.": "O preço já conta com forte crescimento; decepções são punidas rápido.",
+  "Chip equipment": "Equipamentos para chips",
+  "Dutch maker of the lithography machines used to manufacture advanced computer chips.":
+    "Fabricante holandesa das máquinas de litografia usadas para produzir chips avançados.",
+  "It is the only supplier of the most advanced machines, which every leading chip maker needs.":
+    "É a única fornecedora das máquinas mais avançadas, de que todo grande fabricante de chips precisa.",
+  "Orders are lumpy and exposed to export restrictions and the chip cycle.": "Os pedidos são irregulares e expostos a restrições de exportação e ao ciclo dos chips.",
+  "Payments": "Pagamentos",
+  "Runs one of the two largest card payment networks in the world.": "Opera uma das duas maiores redes de pagamento com cartão do mundo.",
+  "It takes a small fee on a vast number of payments and needs little capital to grow.":
+    "Cobra uma pequena taxa sobre um número enorme de pagamentos e precisa de pouco capital para crescer.",
+  "Regulators and new payment systems regularly challenge its fees.": "Reguladores e novos sistemas de pagamento questionam suas taxas com frequência.",
+  "Luxury goods": "Bens de luxo",
+  "French group behind Louis Vuitton, Dior, Tiffany, Hennessy and around 70 other luxury brands.":
+    "Grupo francês por trás de Louis Vuitton, Dior, Tiffany, Hennessy e cerca de 70 outras marcas de luxo.",
+  "Strong brands give it pricing power across fashion, jewellery, drinks and retail.":
+    "Marcas fortes dão a ele poder de preço em moda, joias, bebidas e varejo.",
+  "Sales depend on wealthy consumers, especially in China and the United States.": "As vendas dependem de consumidores ricos, principalmente na China e nos Estados Unidos.",
+  "Healthcare": "Saúde",
+  "French pharmaceutical company focused on immunology, vaccines and rare diseases.":
+    "Farmacêutica francesa focada em imunologia, vacinas e doenças raras.",
+  "Demand for medicines holds up in recessions, which balances the more cyclical companies above.":
+    "A demanda por remédios se mantém em recessões, o que equilibra as empresas mais cíclicas acima.",
+  "Results hinge on drug trials and patent expiries.": "Os resultados dependem de testes clínicos e do fim de patentes.",
+  "Stock funds": "Fundos de ações",
+  "Individual companies": "Empresas individuais",
+  "Bonds": "Renda fixa",
+  "We don't have your spending yet, so this is a share of your income rather than of what is actually left over. Add your transactions for a sharper number.":
+    "Ainda não temos seus gastos, então isto é uma parte da sua renda, não do que realmente sobra. Adicione suas transações para um número mais preciso.",
+  "Clear high-interest debt before investing. Card interest costs more than markets usually return.":
+    "Quite dívidas com juros altos antes de investir. Os juros do cartão custam mais do que o mercado costuma render.",
+  "Most of your spare money should build an emergency fund first.": "A maior parte do que sobra deve ir primeiro para uma reserva de emergência.",
+  "You spend about {spending} a month against {income} coming in, so there is nothing spare to invest yet.":
+    "Você gasta cerca de {spending} por mês contra {income} que entram, então ainda não sobra nada para investir.",
+  "Start with the savings ideas on the Spending page. Even a small surplus is enough to begin.":
+    "Comece pelas ideias de economia na página Gastos. Mesmo uma sobra pequena já basta para começar.",
+  "After your usual spending of {spending}, about {surplus} a month is left over.": "Depois dos seus gastos de costume, de {spending}, sobram cerca de {surplus} por mês.",
+  "Pay down high-interest debt": "Quitar dívidas com juros altos",
+  "You have high-interest debt. Paying it off is a guaranteed return that investing can't match, so put the surplus there first and come back when it is cleared.":
+    "Você tem dívidas com juros altos. Quitá-las é um retorno garantido que nenhum investimento iguala, então coloque a sobra nelas primeiro e volte quando estiverem pagas.",
+  "Build an emergency fund": "Montar uma reserva de emergência",
+  "You don't have an emergency fund yet. Put about three quarters of the surplus into easy-access savings until it covers three months of expenses, and invest the rest so the habit starts now.":
+    "Você ainda não tem reserva de emergência. Coloque cerca de três quartos da sobra em uma aplicação de resgate fácil até cobrir três meses de despesas, e invista o resto para o hábito começar agora.",
+  "Top up your emergency fund": "Completar sua reserva de emergência",
+  "Your emergency fund covers less than three months, so half the surplus keeps building it and half is invested.":
+    "Sua reserva cobre menos de três meses, então metade da sobra continua indo para ela e metade é investida.",
+  "Your emergency fund is in place, so most of the surplus can be invested. The rest stays free for irregular costs.":
+    "Sua reserva de emergência já existe, então a maior parte da sobra pode ser investida. O resto fica livre para gastos irregulares.",
+  "With more than six months of expenses set aside, most of the surplus can go to work. A fifth stays free for irregular costs.":
+    "Com mais de seis meses de despesas guardados, a maior parte da sobra pode trabalhar para você. Um quinto fica livre para gastos irregulares.",
+  "We cap the suggestion at 40% of income so the plan survives an expensive month.":
+    "Limitamos a sugestão a 40% da renda para o plano aguentar um mês mais caro.",
+  "Less than 3 years": "Menos de 3 anos",
+  "3 to 5 years": "De 3 a 5 anos",
+  "5 to 10 years": "De 5 a 10 anos",
+  "10 to 20 years": "De 10 a 20 anos",
+  "More than 20 years": "Mais de 20 anos",
+  "No, not yet": "Não, ainda não",
+  "Less than 3 months of expenses": "Menos de 3 meses de despesas",
+  "3 to 6 months of expenses": "De 3 a 6 meses de despesas",
+  "More than 6 months of expenses": "Mais de 6 meses de despesas",
+  "No": "Não",
+  "Yes": "Sim",
+  "Credit cards, overdraft or consumer loans": "Cartão de crédito, cheque especial ou empréstimo pessoal",
+  "It varies a lot": "Varia muito",
+  "Freelance, commission, seasonal": "Freelance, comissão, sazonal",
+  "Fairly steady": "Razoavelmente estável",
+  "Very steady": "Muito estável",
+  "Permanent contract or similar": "Emprego fixo ou parecido",
+  "I have never invested": "Nunca investi",
+  "I have held funds or ETFs": "Já tive fundos ou ETFs",
+  "I pick individual shares myself": "Escolho ações individuais sozinho",
+  "I invest actively and follow markets closely": "Invisto ativamente e acompanho o mercado de perto",
+  "Sell everything to stop the losses": "Vendo tudo para parar de perder",
+  "Sell some of it": "Vendo uma parte",
+  "Do nothing and wait": "Não faço nada e espero",
+  "Invest more while prices are lower": "Invisto mais enquanto os preços estão baixos",
+  "Calm: it barely moves": "Tranquilo: quase não se mexe",
+  "Gentle: small ups and downs": "Suave: pequenos altos e baixos",
+  "Bumpy: some years clearly up or down": "Agitado: alguns anos bem para cima ou para baixo",
+  "Rollercoaster: big years both ways": "Montanha-russa: anos fortes nos dois sentidos",
+  "Keep what I have safe from inflation": "Proteger o que tenho da inflação",
+  "Grow steadily without big swings": "Crescer de forma constante, sem grandes oscilações",
+  "Grow over the long term; swings are fine": "Crescer no longo prazo; oscilações não me incomodam",
+  "Maximise growth, whatever the swings": "Crescer o máximo possível, com qualquer oscilação",
+  "Conservative": "Conservador",
+  "Protecting what you have comes first. Most of the plan sits in bonds and cash-like funds, with a small share in stocks for growth.":
+    "Proteger o que você tem vem primeiro. A maior parte do plano fica em renda fixa e fundos quase caixa, com uma pequena parte em ações para crescer.",
+  "Cautious": "Cauteloso",
+  "You want growth but not at the cost of sleep. The plan balances stocks against a large cushion of bonds.":
+    "Você quer crescer, mas não a ponto de perder o sono. O plano equilibra ações com uma boa almofada de renda fixa.",
+  "Growth": "Dinâmico",
+  "You have time and the nerve to sit through falls. Most of the plan is in stocks.":
+    "Você tem tempo e sangue frio para atravessar quedas. A maior parte do plano está em ações.",
+  "Ambitious": "Arrojado",
+  "You are investing for the long run and want as much growth as a diversified plan allows. Nearly everything is in stocks.":
+    "Você investe para o longo prazo e quer o máximo de crescimento que um plano diversificado permite. Quase tudo está em ações.",
+  "You need the money within three years, so the plan stays conservative. Stocks can take longer than that to recover from a fall.":
+    "Você vai precisar do dinheiro em até três anos, então o plano fica conservador. Ações podem levar mais tempo do que isso para se recuperar de uma queda.",
+  "With three to five years to invest, the plan is capped at Cautious.": "Com três a cinco anos para investir, o plano vai no máximo até Cauteloso.",
+  "You have high-interest debt. Paying it off is a guaranteed return, so the plan stays cautious until it is gone.":
+    "Você tem dívidas com juros altos. Quitá-las é um retorno garantido, então o plano fica cauteloso até elas acabarem.",
+  "You don't have an emergency fund yet, so the plan stops at Balanced. A safety net keeps you from selling at a bad moment.":
+    "Você ainda não tem reserva de emergência, então o plano vai no máximo até Equilibrado. Uma reserva evita que você precise vender em um momento ruim.",
+  "You said you would sell after a sharp fall. A calmer plan is one you are more likely to stick with.":
+    "Você disse que venderia depois de uma queda forte. Um plano mais calmo é um plano que você tem mais chance de manter.",
+  "Enter your age (18 or over).": "Digite sua idade (18 anos ou mais).",
+  "Enter what you earn in a typical month, after tax.": "Digite quanto você ganha em um mês típico, depois dos impostos.",
+  "Choose how long you plan to invest for.": "Escolha por quanto tempo pretende investir.",
+  "Choose the option closest to your situation.": "Escolha a opção mais próxima da sua situação.",
+  "Choose yes or no.": "Escolha sim ou não.",
+  "Choose the option closest to your experience.": "Escolha a opção mais próxima da sua experiência.",
+  "Choose what you would most likely do.": "Escolha o que você mais provavelmente faria.",
+  "Choose the range you would be comfortable with.": "Escolha a faixa com que você ficaria tranquilo.",
+  "Choose your main goal.": "Escolha seu objetivo principal.",
+};

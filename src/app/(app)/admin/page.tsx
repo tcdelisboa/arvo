@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import { titled } from "@/lib/i18n/server";
+import { msg } from "@/lib/i18n/core";
 import { requireAdmin } from "@/lib/auth";
 import { q, q1 } from "@/lib/db";
 import { setUserPlan } from "@/lib/actions/plan";
@@ -9,7 +10,7 @@ import { PROFILES, type Level } from "@/lib/risk";
 import { Badge, buttonClass, PageHeader, Panel, PanelHeader, Stat } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 
-export const metadata: Metadata = { title: "Admin" };
+export const generateMetadata = titled(msg("Admin"));
 
 type Row = {
   id: string;

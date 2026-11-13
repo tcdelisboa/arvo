@@ -7,6 +7,8 @@ import { hashPassword, randomToken, sha256, verifyPassword } from "../crypto";
 import { createSession, destroySession, recordAttempt, tooManyAttempts } from "../auth";
 import { sendEmail } from "../email";
 import { appUrl } from "../url";
+import { msg } from "../i18n/core";
+import { getI18n } from "../i18n/server";
 
 export type AuthState = {
   error?: string;
@@ -30,21 +32,21 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   const values = { name, email };
 
   const fields: NonNullable<AuthState>["fields"] = {};
-  if (name.length < 2 || name.length > 80) fields.name = "Enter your name.";
-  if (!EMAIL.test(email) || email.length > 200) fields.email = "Enter a valid email address.";
-  if (password.length < 10) fields.password = "Use at least 10 characters.";
-  else if (password.length > 200) fields.password = "Use 200 characters or fewer.";
-  if (!terms) fields.terms = "Agree to the terms to create an account.";
+  if (name.length < 2 || name.length > 80) fields.name = msg("Enter your name.");
+  if (!EMAIL.test(email) || email.length > 200) fields.email = msg("Enter a valid email address.");
+  if (password.length < 10) fields.password = msg("Use at least 10 characters.");
+  else if (password.length > 200) fields.password = msg("Use 200 characters or fewer.");
+  if (!terms) fields.terms = msg("Agree to the terms to create an account.");
   if (Object.keys(fields).length) return { fields, values };
 
   if (await tooManyAttempts("signup", email)) {
-    return { error: "Too many attempts. Wait a few minutes and try again.", values };
+    return { error: msg("Too many attempts. Wait a few minutes and try again."), values };
   }
   await recordAttempt("signup", email);
 
   const existing = await q1("SELECT id FROM users WHERE email = $1", [email]);
   if (existing) {
-    return { fields: { email: "An account with this email already exists. Sign in instead." }, values };
+    return { fields: { email: msg("An account with this email already exists. Sign in instead.") }, values };
   }
 
   const id = randomUUID();
@@ -63,10 +65,10 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
   const password = String(formData.get("password") ?? "");
   const values = { email };
   if (!EMAIL.test(email) || !password) {
-    return { error: "Enter your email and password.", values };
+    return { error: msg("Enter your email and password."), values };
   }
   if (await tooManyAttempts("login", email)) {
-    return { error: "Too many attempts. Wait 15 minutes and try again, or reset your password.", values };
+    return { error: msg("Too many attempts. Wait 15 minutes and try again, or reset your password."), values };
   }
 
   const user = await q1<{ id: string; password_hash: string; onboarded: boolean }>(
@@ -79,7 +81,7 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
     : (await hashPassword(password), false);
   if (!user || !ok) {
     await recordAttempt("login", email);
-    return { error: "That email and password don't match. Check them and try again.", values };
+    return { error: msg("That email and password don't match. Check them and try again."), values };
   }
 
   await createSession(user.id);
@@ -93,9 +95,9 @@ export async function logout(): Promise<void> {
 
 export async function requestReset(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const email = read(formData, "email").toLowerCase();
-  if (!EMAIL.test(email)) return { fields: { email: "Enter a valid email address." }, values: { email } };
+  if (!EMAIL.test(email)) return { fields: { email: msg("Enter a valid email address.") }, values: { email } };
   if (await tooManyAttempts("reset", email)) {
-    return { error: "Too many attempts. Wait a few minutes and try again.", values: { email } };
+    return { error: msg("Too many attempts. Wait a few minutes and try again."), values: { email } };
   }
   await recordAttempt("reset", email);
 
@@ -107,10 +109,14 @@ export async function requestReset(_prev: AuthState, formData: FormData): Promis
       [sha256(token), user.id],
     );
     const base = appUrl();
+    const { t } = await getI18n();
     await sendEmail(
       email,
-      "Reset your Arvo password",
-      `Hello ${user.name},\n\nUse this link to choose a new password. It works once and expires in one hour.\n\n${base}/reset?token=${token}\n\nIf you didn't ask for this, you can ignore this email.\n\nArvo`,
+      t("Reset your Arvo password"),
+      t("Hello {name},\n\nUse this link to choose a new password. It works once and expires in one hour.\n\n{link}\n\nIf you didn't ask for this, you can ignore this email.\n\nArvo", {
+        name: user.name,
+        link: `${base}/reset?token=${token}`,
+      }),
     );
   }
   // Same answer either way, so this form can't be used to find out who has an account.
@@ -120,14 +126,14 @@ export async function requestReset(_prev: AuthState, formData: FormData): Promis
 export async function resetPassword(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const token = read(formData, "token");
   const password = String(formData.get("password") ?? "");
-  if (password.length < 10) return { fields: { password: "Use at least 10 characters." } };
-  if (password.length > 200) return { fields: { password: "Use 200 characters or fewer." } };
+  if (password.length < 10) return { fields: { password: msg("Use at least 10 characters.") } };
+  if (password.length > 200) return { fields: { password: msg("Use 200 characters or fewer.") } };
 
   const row = await q1<{ user_id: string }>(
     "SELECT user_id FROM password_resets WHERE token_hash = $1 AND used = FALSE AND expires_at > now()",
     [sha256(token)],
   );
-  if (!row) return { error: "This reset link has expired or was already used. Request a new one." };
+  if (!row) return { error: msg("This reset link has expired or was already used. Request a new one.") };
 
   await q("UPDATE users SET password_hash = $1 WHERE id = $2", [await hashPassword(password), row.user_id]);
   await q("UPDATE password_resets SET used = TRUE WHERE user_id = $1", [row.user_id]);

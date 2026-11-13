@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
+import { getI18n, titled } from "@/lib/i18n/server";
+import { msg } from "@/lib/i18n/core";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Download, Lock, Search } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { listAccounts, listTransactions } from "@/lib/data";
 import { CATEGORIES, CATEGORY_KEYS, categoryLabel, isCategory } from "@/lib/categories";
-import { day, money, month, todayIso } from "@/lib/format";
+import { todayIso } from "@/lib/format";
 import {
   categoryTotals, findRecurring, monthlyAverages, summarizeMonths, ymOf, type Tx,
 } from "@/lib/spending";
@@ -16,7 +17,7 @@ import { CategoryBars } from "@/components/category-bars";
 import { CategorySelect } from "@/components/category-select";
 import { InsightsFallback, InsightsPanel } from "@/components/insights-panel";
 
-export const metadata: Metadata = { title: "Spending" };
+export const generateMetadata = titled(msg("Spending"));
 
 const PAGE_SIZE = 40;
 
@@ -28,16 +29,18 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
   const user = await requireUser();
   const params = await searchParams;
   const [txs, accounts] = await Promise.all([listTransactions(user.id), listAccounts(user.id)]);
+  const { t, f, lang } = await getI18n();
+  const { money, month, day } = f;
   const fmt = (cents: number) => money(cents, user.currency, { whole: true });
 
   if (!txs.length) {
     return (
       <>
-        <PageHeader title="Spending" lead="Every transaction, sorted into categories, with ideas for where to save." />
+        <PageHeader title={t("Spending")} lead={t("Every transaction, sorted into categories, with ideas for where to save.")} />
         <Panel className="p-6 sm:p-10">
-          <h2 className="display text-[30px] text-ink">Nothing to show yet</h2>
-          <p className="mt-2 max-w-lg text-ink-2">Add your transactions and this page fills in on its own.</p>
-          <div className="mt-6"><ButtonLink href="/accounts">Add your transactions</ButtonLink></div>
+          <h2 className="display text-[30px] text-ink">{t("Nothing to show yet")}</h2>
+          <p className="mt-2 max-w-lg text-ink-2">{t("Add your transactions and this page fills in on its own.")}</p>
+          <div className="mt-6"><ButtonLink href="/accounts">{t("Add your transactions")}</ButtonLink></div>
         </Panel>
       </>
     );
@@ -64,7 +67,7 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
   const spending = summary ? summary.spending : averages.spending;
   const totals = categoryTotals(txs, periodMonths);
   const recurring = findRecurring(txs);
-  const calculated = buildInsights({ txs, todayIso: today, fmt });
+  const calculated = buildInsights({ txs, todayIso: today, fmt, t, pctFmt: (n) => f.percent(n, 0) });
 
   // Transaction filters.
   const query = one(params.q).trim().slice(0, 60);
@@ -101,26 +104,26 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
   return (
     <>
       <PageHeader
-        title="Spending"
-        lead="Every transaction, sorted into categories, with ideas for where to save."
+        title={t("Spending")}
+        lead={t("Every transaction, sorted into categories, with ideas for where to save.")}
         action={
           <>
             {plus ? (
               <a href="/api/export" className={buttonClass("secondary", "md")} download>
-                <Download size={17} /> Export to Excel
+                <Download size={17} /> {t("Export to Excel")}
               </a>
             ) : (
               <Link href="/plus" className={buttonClass("secondary", "md")}>
-                <Lock size={16} /> Export to Excel with Plus
+                <Lock size={16} /> {t("Export to Excel with Plus")}
               </Link>
             )}
           </>
         }
       />
 
-      <nav aria-label="Period" className="no-print -mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+      <nav aria-label={t("Period")} className="no-print -mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
         <Link href={link({ m: null, page: null })} className={pill(selected === "avg")} aria-current={selected === "avg" ? "true" : undefined}>
-          Typical month
+          {t("Typical month")}
         </Link>
         {[...allMonths].reverse().slice(0, 12).map((ym) => (
           <Link key={ym} href={link({ m: ym, page: null })} className={pill(selected === ym)} aria-current={selected === ym ? "true" : undefined}>
@@ -131,12 +134,12 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
 
       <Panel className="p-5 sm:p-7">
         <div className="grid gap-6 sm:grid-cols-3 sm:gap-8">
-          <Stat size="lg" label={selected === "avg" ? "Spent in a typical month" : `Spent in ${month(selected, "long")}`} value={fmt(spending)} />
-          <Stat label="Money in" value={fmt(income)} />
+          <Stat size="lg" label={selected === "avg" ? t("Spent in a typical month") : t("Spent in {month}", { month: month(selected, "long") })} value={fmt(spending)} />
+          <Stat label={t("Money in")} value={fmt(income)} />
           <Stat
-            label="Left over"
+            label={t("Left over")}
             value={<span className={income - spending < 0 ? "text-neg" : undefined}>{fmt(income - spending)}</span>}
-            note={selected === "avg" && averages.months.length ? `Average of ${averages.months.map((ym) => month(ym)).join(", ")}` : undefined}
+            note={selected === "avg" && averages.months.length ? t("Average of {months}", { months: averages.months.map((ym) => month(ym)).join(", ") }) : undefined}
           />
         </div>
       </Panel>
@@ -144,7 +147,7 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
       <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_1.25fr]">
         <div className="space-y-5">
           <Panel>
-            <PanelHeader title="By category" note={selected === "avg" ? "Monthly average" : month(selected, "long")} />
+            <PanelHeader title={t("By category")} note={selected === "avg" ? t("Monthly average") : month(selected, "long")} />
             <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
               <CategoryBars rows={totals} currency={user.currency} divisor={divisor} hrefFor={(c) => link({ cat: c, page: null }, "#transactions")} />
             </div>
@@ -152,19 +155,19 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
 
           {recurring.length ? (
             <Panel>
-              <PanelHeader title="Regular payments" note="Charged every month at about the same amount" />
+              <PanelHeader title={t("Regular payments")} note={t("Charged every month at about the same amount")} />
               <ul className="divide-y divide-line px-5 pb-4 pt-2 sm:px-6 sm:pb-5">
                 {recurring.slice(0, 10).map((item) => (
                   <li key={item.merchant} className="flex items-baseline justify-between gap-3 py-2.5 text-[14px]">
                     <span className="min-w-0">
                       <span className="block truncate text-ink">{item.merchant}</span>
-                      <span className="text-[12.5px] text-ink-3">{categoryLabel(item.category)}</span>
+                      <span className="text-[12.5px] text-ink-3">{t(categoryLabel(item.category))}</span>
                     </span>
                     <span className="tnum shrink-0 font-medium text-ink">{money(item.monthlyCents, user.currency)}</span>
                   </li>
                 ))}
                 <li className="flex items-baseline justify-between gap-3 pt-3 text-[14px]">
-                  <span className="text-ink-2">Total each month</span>
+                  <span className="text-ink-2">{t("Total each month")}</span>
                   <span className="tnum font-semibold text-ink">{money(recurring.reduce((sum, r) => sum + r.monthlyCents, 0), user.currency)}</span>
                 </li>
               </ul>
@@ -185,6 +188,7 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
               categories: categoryTotals(txs, averages.months),
               recurring,
               calculated,
+              lang,
             }}
           />
         </Suspense>
@@ -192,30 +196,33 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
 
       <Panel id="transactions" className="mt-5 scroll-mt-20">
         <PanelHeader
-          title="All transactions"
-          note={`${filtered.length.toLocaleString("en-GB")} ${filtered.length === 1 ? "transaction" : "transactions"}${cat || tm || query ? `, net ${money(filteredTotal, user.currency)}` : ""}`}
+          title={t("All transactions")}
+          note={
+            (filtered.length === 1 ? t("1 transaction") : t("{n} transactions", { n: f.number(filtered.length, 0) })) +
+            (cat || tm || query ? t(", net {amount}", { amount: money(filteredTotal, user.currency) }) : "")
+          }
         />
         <form action="/spending#transactions" className="no-print flex flex-wrap gap-2 px-5 pt-4 sm:px-6">
           {selected !== "avg" ? <input type="hidden" name="m" value={selected} /> : null}
           <div className="relative min-w-[180px] flex-1">
             <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3" />
-            <input name="q" defaultValue={query} placeholder="Search by name" aria-label="Search transactions" className={cx(fieldClass, "block h-11 w-full pl-10 pr-3.5 text-base sm:text-[15px]")} />
+            <input name="q" defaultValue={query} placeholder={t("Search by name")} aria-label={t("Search transactions")} className={cx(fieldClass, "block h-11 w-full pl-10 pr-3.5 text-base sm:text-[15px]")} />
           </div>
-          <select name="cat" defaultValue={cat} aria-label="Category" className={cx(fieldClass, "h-11 min-w-[150px] flex-1 px-3 text-base sm:flex-none sm:text-[15px]")}>
-            <option value="">All categories</option>
+          <select name="cat" defaultValue={cat} aria-label={t("Category")} className={cx(fieldClass, "h-11 min-w-[150px] flex-1 px-3 text-base sm:flex-none sm:text-[15px]")}>
+            <option value="">{t("All categories")}</option>
             {CATEGORY_KEYS.map((key) => (
-              <option key={key} value={key}>{CATEGORIES[key].label}</option>
+              <option key={key} value={key}>{t(CATEGORIES[key].label)}</option>
             ))}
           </select>
-          <select name="tm" defaultValue={tm} aria-label="Month" className={cx(fieldClass, "h-11 min-w-[130px] flex-1 px-3 text-base sm:flex-none sm:text-[15px]")}>
-            <option value="">All months</option>
+          <select name="tm" defaultValue={tm} aria-label={t("Month")} className={cx(fieldClass, "h-11 min-w-[130px] flex-1 px-3 text-base sm:flex-none sm:text-[15px]")}>
+            <option value="">{t("All months")}</option>
             {[...allMonths].reverse().map((ym) => (
               <option key={ym} value={ym}>{month(ym, "long")}</option>
             ))}
           </select>
-          <button type="submit" className={buttonClass("secondary", "md")}>Filter</button>
+          <button type="submit" className={buttonClass("secondary", "md")}>{t("Filter")}</button>
           {cat || tm || query ? (
-            <Link href={link({ q: null, cat: null, tm: null, page: null }, "#transactions")} className={buttonClass("ghost", "md")}>Clear</Link>
+            <Link href={link({ q: null, cat: null, tm: null, page: null }, "#transactions")} className={buttonClass("ghost", "md")}>{t("Clear")}</Link>
           ) : null}
         </form>
 
@@ -226,11 +233,11 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
               <table className="w-full border-collapse text-left text-[14px]">
                 <thead>
                   <tr className="text-[12.5px] text-ink-3">
-                    <th scope="col" className="px-3 py-2 font-medium">Date</th>
-                    <th scope="col" className="px-3 py-2 font-medium">Description</th>
-                    <th scope="col" className="px-3 py-2 font-medium">Category</th>
-                    <th scope="col" className="px-3 py-2 font-medium">Account</th>
-                    <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
+                    <th scope="col" className="px-3 py-2 font-medium">{t("Date")}</th>
+                    <th scope="col" className="px-3 py-2 font-medium">{t("Description")}</th>
+                    <th scope="col" className="px-3 py-2 font-medium">{t("Category")}</th>
+                    <th scope="col" className="px-3 py-2 font-medium">{t("Account")}</th>
+                    <th scope="col" className="px-3 py-2 text-right font-medium">{t("Amount")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -273,30 +280,31 @@ export default async function SpendingPage({ searchParams }: PageProps<"/spendin
             </ul>
 
             {pages > 1 ? (
-              <nav aria-label="Pages" className="no-print flex items-center justify-between gap-3 border-t border-line px-5 py-4 text-[13.5px] sm:px-6">
-                <span className="tnum text-ink-3">Page {page} of {pages}</span>
+              <nav aria-label={t("Pages")} className="no-print flex items-center justify-between gap-3 border-t border-line px-5 py-4 text-[13.5px] sm:px-6">
+                <span className="tnum text-ink-3">{t("Page {page} of {pages}", { page, pages })}</span>
                 <span className="flex gap-2">
-                  {page > 1 ? <Link href={link({ page: String(page - 1) }, "#transactions")} className={buttonClass("secondary", "sm")}>Previous</Link> : null}
-                  {page < pages ? <Link href={link({ page: String(page + 1) }, "#transactions")} className={buttonClass("secondary", "sm")}>Next</Link> : null}
+                  {page > 1 ? <Link href={link({ page: String(page - 1) }, "#transactions")} className={buttonClass("secondary", "sm")}>{t("Previous")}</Link> : null}
+                  {page < pages ? <Link href={link({ page: String(page + 1) }, "#transactions")} className={buttonClass("secondary", "sm")}>{t("Next")}</Link> : null}
                 </span>
               </nav>
             ) : <div className="h-3" />}
           </>
         ) : (
-          <p className="px-5 py-8 text-[14.5px] text-ink-2 sm:px-6">No transactions match these filters.</p>
+          <p className="px-5 py-8 text-[14.5px] text-ink-2 sm:px-6">{t("No transactions match these filters.")}</p>
         )}
       </Panel>
 
       {hiddenMonths > 0 ? (
         <p className="mt-4 text-[13.5px] text-ink-2">
-          Free shows this month and the {FREE_HISTORY_MONTHS} before it. You have {hiddenMonths} earlier{" "}
-          {hiddenMonths === 1 ? "month" : "months"} stored.{" "}
-          <Link href="/plus" className="font-medium text-brand-ink underline underline-offset-2">See your full history with Plus</Link>
+          {hiddenMonths === 1
+            ? t("Free shows this month and the {n} before it. You have 1 earlier month stored.", { n: FREE_HISTORY_MONTHS })
+            : t("Free shows this month and the {n} before it. You have {hidden} earlier months stored.", { n: FREE_HISTORY_MONTHS, hidden: hiddenMonths })}{" "}
+          <Link href="/plus" className="font-medium text-brand-ink underline underline-offset-2">{t("See your full history with Plus")}</Link>
         </p>
       ) : null}
 
       <p className="mt-4 text-[12.5px] text-ink-3">
-        Transfers between your own accounts and money moved to savings are not counted as spending.
+        {t("Transfers between your own accounts and money moved to savings are not counted as spending.")}
       </p>
     </>
   );

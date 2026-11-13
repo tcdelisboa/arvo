@@ -4,29 +4,32 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BadgePlus, ChartPie, House, Landmark, ReceiptText, Settings, ShieldCheck, TrendingUp, type LucideIcon } from "lucide-react";
 import { cx } from "./ui";
+import { useI18n } from "./i18n";
+import { msg } from "@/lib/i18n/core";
 
 type Item = { href: string; label: string; icon: LucideIcon; mobile?: boolean };
 
 const ITEMS: Item[] = [
-  { href: "/overview", label: "Overview", icon: House, mobile: true },
-  { href: "/spending", label: "Spending", icon: ReceiptText, mobile: true },
-  { href: "/portfolio", label: "Portfolio", icon: ChartPie, mobile: true },
-  { href: "/markets", label: "Markets", icon: TrendingUp, mobile: true },
-  { href: "/accounts", label: "Accounts", icon: Landmark },
-  { href: "/settings", label: "Settings", icon: Settings, mobile: true },
+  { href: "/overview", label: msg("Overview"), icon: House, mobile: true },
+  { href: "/spending", label: msg("Spending"), icon: ReceiptText, mobile: true },
+  { href: "/portfolio", label: msg("Portfolio"), icon: ChartPie, mobile: true },
+  { href: "/markets", label: msg("Markets"), icon: TrendingUp, mobile: true },
+  { href: "/accounts", label: msg("Accounts"), icon: Landmark },
+  { href: "/settings", label: msg("Settings"), icon: Settings, mobile: true },
 ];
 
 const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
 export function SideNav({ plus, admin }: { plus: boolean; admin: boolean }) {
   const pathname = usePathname();
+  const { t } = useI18n();
   const items: Item[] = [
     ...ITEMS,
-    ...(plus ? [] : [{ href: "/plus", label: "Get Plus", icon: BadgePlus }]),
-    ...(admin ? [{ href: "/admin", label: "Admin", icon: ShieldCheck }] : []),
+    ...(plus ? [] : [{ href: "/plus", label: msg("Get Plus"), icon: BadgePlus }]),
+    ...(admin ? [{ href: "/admin", label: msg("Admin"), icon: ShieldCheck }] : []),
   ];
   return (
-    <nav aria-label="Main" className="flex flex-col gap-0.5">
+    <nav aria-label={t("Main")} className="flex flex-col gap-0.5">
       {items.map(({ href, label, icon: Icon }) => {
         const active = isActive(pathname, href);
         return (
@@ -40,7 +43,7 @@ export function SideNav({ plus, admin }: { plus: boolean; admin: boolean }) {
             )}
           >
             <Icon size={18} strokeWidth={active ? 2.1 : 1.8} />
-            {label}
+            {t(label)}
           </Link>
         );
       })}
@@ -50,9 +53,10 @@ export function SideNav({ plus, admin }: { plus: boolean; admin: boolean }) {
 
 export function TabBar() {
   const pathname = usePathname();
+  const { t } = useI18n();
   return (
     <nav
-      aria-label="Main"
+      aria-label={t("Main")}
       className="no-print safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur lg:hidden"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-5">
@@ -71,7 +75,7 @@ export function TabBar() {
                 )}
               >
                 <Icon size={21} strokeWidth={active ? 2.1 : 1.7} />
-                {label}
+                {t(label)}
               </Link>
             </li>
           );

@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { RANGES, type Candle, type Range } from "@/lib/market/types";
-import { percent } from "@/lib/format";
+import { msg } from "@/lib/i18n/core";
+import { useI18n } from "./i18n";
 import { PriceLine } from "./charts";
 import { cx } from "./ui";
 
-const LABEL: Record<Range, string> = { "1m": "1 month", "6m": "6 months", "1y": "1 year", "5y": "5 years" };
+const LABEL: Record<Range, string> = { "1m": msg("1 month"), "6m": msg("6 months"), "1y": msg("1 year"), "5y": msg("5 years") };
 
 export function PriceChart({
   symbol,
@@ -23,6 +24,7 @@ export function PriceChart({
   const [points, setPoints] = useState<Candle[]>(initial);
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
+  const { t, f } = useI18n();
 
   const choose = (next: Range) => {
     if (next === range) return;
@@ -45,7 +47,7 @@ export function PriceChart({
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label="Period" className="inline-flex rounded-control bg-sunken p-1">
+        <div role="group" aria-label={t("Period")} className="inline-flex rounded-control bg-sunken p-1">
           {RANGES.map((r) => (
             <button
               key={r}
@@ -57,19 +59,19 @@ export function PriceChart({
                 r === range ? "bg-raised font-medium text-ink shadow-[0_1px_2px_rgb(14_33_29/0.1)]" : "text-ink-2 hover:text-ink",
               )}
             >
-              {LABEL[r]}
+              {t(LABEL[r])}
             </button>
           ))}
         </div>
         {change !== null ? (
           <p className="text-[13.5px] text-ink-2">
-            <span className={cx("tnum font-medium", change >= 0 ? "text-pos" : "text-neg")}>{percent(change, 1, true)}</span> over {LABEL[range]}
+            <span className={cx("tnum font-medium", change >= 0 ? "text-pos" : "text-neg")}>{f.percent(change, 1, true)}</span> {t("over {period}", { period: t(LABEL[range]) })}
           </p>
         ) : null}
       </div>
       <div className={cx("transition-opacity", pending && "opacity-50")}>
         {failed ? (
-          <p className="flex h-[260px] items-center justify-center text-[14px] text-ink-3">We couldn&apos;t load this period. Try again.</p>
+          <p className="flex h-[260px] items-center justify-center text-[14px] text-ink-3">{t("We couldn't load this period. Try again.")}</p>
         ) : (
           <PriceLine points={points} currency={currency} />
         )}

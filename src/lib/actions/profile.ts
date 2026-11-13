@@ -1,5 +1,6 @@
 "use server";
 
+import { msg } from "../i18n/core";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "../auth";
@@ -26,7 +27,7 @@ export async function saveInvestorProfile(_prev: ProfileState, formData: FormDat
   const monthly = monthlyFrom(formData.get("monthly"));
 
   const errors: Record<string, string> = result.ok ? {} : { ...result.errors };
-  if (monthly === null) errors.monthly = "Enter the amount you want to invest each month.";
+  if (monthly === null) errors.monthly = msg("Enter the amount you want to invest each month.");
   if (!result.ok || monthly === null) return { errors };
 
   const risk = scoreRisk(result.answers);

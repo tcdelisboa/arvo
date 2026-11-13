@@ -1,3 +1,4 @@
+import { msg } from "./i18n/core";
 import "server-only";
 import type { ParsedStatement } from "./csv";
 import { linesFromItems, parsePdfStatement, type PdfItem } from "./pdf-statement";
@@ -14,9 +15,9 @@ export async function readPdfStatement(bytes: Uint8Array): Promise<ParsedStateme
   } catch (error) {
     const name = error instanceof Error ? error.name : "";
     if (name === "PasswordException") {
-      return failure("This PDF is locked with a password. Save a copy without the password, or download the statement as CSV.");
+      return failure(msg("This PDF is locked with a password. Save a copy without the password, or download the statement as CSV."));
     }
-    return failure("Arvo could not open this PDF. Download the statement again from your bank and try once more.");
+    return failure(msg("Arvo could not open this PDF. Download the statement again from your bank and try once more."));
   }
 
   const items: PdfItem[] = [];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { money, percent } from "@/lib/format";
+import { useI18n } from "./i18n";
 import { project } from "@/lib/portfolio";
 import { ProjectionChart } from "./charts";
 
@@ -22,21 +22,22 @@ export function Projection({
   const [years, setYears] = useState(defaultYears);
   const data = useMemo(() => project(monthlyCents, { expectedReturn, volatility }, years), [monthlyCents, expectedReturn, volatility, years]);
   const end = data[data.length - 1];
-  const fmt = (cents: number) => money(cents, currency, { whole: true });
+  const { t, f } = useI18n();
+  const fmt = (cents: number) => f.money(cents, currency, { whole: true });
 
   return (
     <div>
       <div className="grid gap-5 sm:grid-cols-3">
         <div>
-          <p className="text-[13px] text-ink-3">Likely value after {years} years</p>
+          <p className="text-[13px] text-ink-3">{t("Likely value after {n} years", { n: years })}</p>
           <p className="figure mt-1 text-[34px] leading-none text-ink">{fmt(end.mid)}</p>
         </div>
         <div>
-          <p className="text-[13px] text-ink-3">Could reasonably be between</p>
-          <p className="figure mt-1 text-[22px] leading-tight text-ink">{fmt(end.low)} and {fmt(end.high)}</p>
+          <p className="text-[13px] text-ink-3">{t("Could reasonably be between")}</p>
+          <p className="figure mt-1 text-[22px] leading-tight text-ink">{t("{low} and {high}", { low: fmt(end.low), high: fmt(end.high) })}</p>
         </div>
         <div>
-          <p className="text-[13px] text-ink-3">You would have paid in</p>
+          <p className="text-[13px] text-ink-3">{t("You would have paid in")}</p>
           <p className="figure mt-1 text-[22px] leading-tight text-ink">{fmt(end.paid)}</p>
         </div>
       </div>
@@ -47,7 +48,7 @@ export function Projection({
 
       <div className="mt-5 flex items-center gap-4">
         <label htmlFor="years" className="shrink-0 text-[13.5px] text-ink-2">
-          Years invested
+          {t("Years invested")}
         </label>
         <input
           id="years"
@@ -62,10 +63,11 @@ export function Projection({
       </div>
 
       <p className="mt-5 max-w-[70ch] text-[12.5px] leading-relaxed text-ink-3">
-        This is an illustration, not a forecast. It assumes {fmt(monthlyCents)} invested every month and a long-run return of{" "}
-        {percent(expectedReturn * 100)} a year before inflation, fees and tax, with year-to-year swings of about {percent(volatility * 100, 0)}.
-        About two outcomes in three would fall inside the shaded range; one in three would fall outside it. Real markets can do
-        better or worse than any model.
+        {t("This is an illustration, not a forecast. It assumes {amount} invested every month and a long-run return of {rate} a year before inflation, fees and tax, with year-to-year swings of about {swing}. About two outcomes in three would fall inside the shaded range; one in three would fall outside it. Real markets can do better or worse than any model.", {
+          amount: fmt(monthlyCents),
+          rate: f.percent(expectedReturn * 100),
+          swing: f.percent(volatility * 100, 0),
+        })}
       </p>
     </div>
   );

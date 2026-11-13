@@ -1,3 +1,5 @@
+import { LOCALE, type Lang } from "@/lib/i18n/core";
+
 export const CURRENCIES = ["EUR", "BRL", "USD", "GBP"] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
@@ -5,76 +7,91 @@ export function isCurrency(value: unknown): value is Currency {
   return typeof value === "string" && (CURRENCIES as readonly string[]).includes(value);
 }
 
-const LOCALE = "en-GB";
+const MONTHS: Record<Lang, string[]> = {
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  pt: ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"],
+};
+const MONTHS_LONG: Record<Lang, string[]> = {
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  pt: ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"],
+};
 
-/** Money from integer cents. `whole` drops the decimals for headline figures. */
-export function money(cents: number, currency: string, opts: { whole?: boolean; sign?: boolean } = {}): string {
-  const digits = opts.whole ? 0 : 2;
-  const formatted = new Intl.NumberFormat(LOCALE, {
-    style: "currency",
-    currency,
-    currencyDisplay: "narrowSymbol",
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(Math.abs(cents) / 100);
-  if (cents < 0) return `−${formatted}`;
-  if (opts.sign && cents > 0) return `+${formatted}`;
-  return formatted;
-}
+/** Number and date formatting in one language. */
+export function fmtFor(lang: Lang) {
+  const locale = LOCALE[lang];
 
-/** A market price in its own currency (not cents). */
-export function price(value: number | null | undefined, currency?: string | null): string {
-  if (value == null || !Number.isFinite(value)) return "—";
-  const digits = Math.abs(value) >= 1000 ? 0 : 2;
-  if (!currency) return value.toLocaleString(LOCALE, { minimumFractionDigits: digits, maximumFractionDigits: digits });
-  try {
-    return new Intl.NumberFormat(LOCALE, {
+  /** Money from integer cents. `whole` drops the decimals for headline figures. */
+  function money(cents: number, currency: string, opts: { whole?: boolean; sign?: boolean } = {}): string {
+    const digits = opts.whole ? 0 : 2;
+    const formatted = new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       currencyDisplay: "narrowSymbol",
       minimumFractionDigits: digits,
       maximumFractionDigits: digits,
-    }).format(value);
-  } catch {
-    return `${value.toFixed(digits)} ${currency}`;
+    }).format(Math.abs(cents) / 100);
+    if (cents < 0) return `−${formatted}`;
+    if (opts.sign && cents > 0) return `+${formatted}`;
+    return formatted;
   }
+
+  /** A market price in its own currency (not cents). */
+  function price(value: number | null | undefined, currency?: string | null): string {
+    if (value == null || !Number.isFinite(value)) return "—";
+    const digits = Math.abs(value) >= 1000 ? 0 : 2;
+    if (!currency) return value.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency,
+        currencyDisplay: "narrowSymbol",
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      }).format(value);
+    } catch {
+      return `${value.toFixed(digits)} ${currency}`;
+    }
+  }
+
+  function number(value: number | null | undefined, digits = 1): string {
+    if (value == null || !Number.isFinite(value)) return "—";
+    return value.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  }
+
+  function percent(value: number | null | undefined, digits = 1, sign = false): string {
+    if (value == null || !Number.isFinite(value)) return "—";
+    const body = `${number(Math.abs(value), digits)}%`;
+    if (value < 0) return `−${body}`;
+    return sign && value > 0 ? `+${body}` : body;
+  }
+
+  function compact(value: number | null | undefined, currency?: string | null): string {
+    if (value == null || !Number.isFinite(value)) return "—";
+    const body = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
+    return currency ? `${body} ${currency}` : body;
+  }
+
+  /** "2026-11-03" -> "3 Nov 2026" / "3 nov 2026". Pure string work, so server and browser agree. */
+  function day(iso: string, withYear = true): string {
+    const [y, m, d] = iso.split("-").map(Number);
+    const name = MONTHS[lang][m - 1];
+    return withYear ? `${d} ${name} ${y}` : `${d} ${name}`;
+  }
+
+  /** "2026-11" -> "Nov" / "November 2026" ("novembro de 2026"). */
+  function month(ym: string, style: "short" | "long" = "short"): string {
+    const [y, m] = ym.split("-").map(Number);
+    if (style === "short") return MONTHS[lang][m - 1];
+    return lang === "pt" ? `${MONTHS_LONG.pt[m - 1]} de ${y}` : `${MONTHS_LONG.en[m - 1]} ${y}`;
+  }
+
+  return { lang, money, price, number, percent, compact, day, month };
 }
 
-export function percent(value: number | null | undefined, digits = 1, sign = false): string {
-  if (value == null || !Number.isFinite(value)) return "—";
-  const body = `${Math.abs(value).toFixed(digits)}%`;
-  if (value < 0) return `−${body}`;
-  return sign && value > 0 ? `+${body}` : body;
-}
+export type Fmt = ReturnType<typeof fmtFor>;
 
-export function compact(value: number | null | undefined, currency?: string | null): string {
-  if (value == null || !Number.isFinite(value)) return "—";
-  const body = new Intl.NumberFormat(LOCALE, { notation: "compact", maximumFractionDigits: 1 }).format(value);
-  return currency ? `${body} ${currency}` : body;
-}
-
-export function number(value: number | null | undefined, digits = 1): string {
-  if (value == null || !Number.isFinite(value)) return "—";
-  return value.toLocaleString(LOCALE, { minimumFractionDigits: digits, maximumFractionDigits: digits });
-}
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const MONTHS_LONG = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
-/** "2026-11-03" -> "3 Nov 2026". Pure string work, so server and browser agree. */
-export function day(iso: string, withYear = true): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return withYear ? `${d} ${MONTHS[m - 1]} ${y}` : `${d} ${MONTHS[m - 1]}`;
-}
-
-/** "2026-11" -> "Nov" / "November 2026". */
-export function month(ym: string, style: "short" | "long" = "short"): string {
-  const [y, m] = ym.split("-").map(Number);
-  return style === "short" ? MONTHS[m - 1] : `${MONTHS_LONG[m - 1]} ${y}`;
-}
+const en = fmtFor("en");
+export const { money, price, number, percent, compact, day, month } = en;
 
 export function todayIso(now = new Date()): string {
   return now.toISOString().slice(0, 10);

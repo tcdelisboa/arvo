@@ -5,11 +5,13 @@ import { FileSpreadsheet } from "lucide-react";
 import { importStatement, type ImportState } from "@/lib/actions/data";
 import { Field, inputClass, Notice } from "./ui";
 import { SubmitButton } from "./submit-button";
+import { useI18n } from "./i18n";
 
 export function ImportForm() {
   const [state, action] = useActionState<ImportState, FormData>(importStatement, null);
   const [fileName, setFileName] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const { t } = useI18n();
 
   return (
     <form action={action} className="space-y-4">
@@ -25,8 +27,8 @@ export function ImportForm() {
             <FileSpreadsheet size={19} />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-[14.5px] font-medium text-ink">{fileName ?? "Choose CSV or PDF files"}</span>
-            <span className="block text-[13px] text-ink-3">Several at once is fine: up to 24 files, 5 MB each.</span>
+            <span className="block truncate text-[14.5px] font-medium text-ink">{fileName ?? t("Choose CSV or PDF files")}</span>
+            <span className="block text-[13px] text-ink-3">{t("Several at once is fine: up to 24 files, 5 MB each.")}</span>
           </span>
           <input
             ref={input}
@@ -39,17 +41,17 @@ export function ImportForm() {
             className="sr-only"
             onChange={(e) => {
               const chosen = e.target.files;
-              setFileName(!chosen?.length ? null : chosen.length === 1 ? chosen[0].name : `${chosen.length} files chosen`);
+              setFileName(!chosen?.length ? null : chosen.length === 1 ? chosen[0].name : t("{n} files chosen", { n: chosen.length }));
             }}
           />
         </label>
       </div>
 
-      <Field label="Account name" htmlFor="name" hint="Optional. For example, the name of your bank.">
-        <input id="name" name="name" maxLength={60} placeholder="Current account" className={inputClass} />
+      <Field label={t("Account name")} htmlFor="name" hint={t("Optional. For example, the name of your bank.")}>
+        <input id="name" name="name" maxLength={60} placeholder={t("Current account")} className={inputClass} />
       </Field>
 
-      <SubmitButton variant="secondary" pendingLabel="Importing">Import statement</SubmitButton>
+      <SubmitButton variant="secondary" pendingLabel={t("Importing")}>{t("Import statement")}</SubmitButton>
     </form>
   );
 }

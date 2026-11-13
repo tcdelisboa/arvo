@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import type { SearchHit } from "@/lib/market/types";
 import { cx, fieldClass } from "./ui";
+import { useI18n } from "./i18n";
 
 /** Search any share or fund by name or ticker, with keyboard support. */
 export function MarketSearch() {
@@ -16,6 +17,7 @@ export function MarketSearch() {
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     const q = query.trim();
@@ -62,8 +64,8 @@ export function MarketSearch() {
         aria-expanded={showList}
         aria-controls={listId}
         aria-autocomplete="list"
-        aria-label="Search shares and funds"
-        placeholder="Search any company, fund or ticker"
+        aria-label={t("Search shares and funds")}
+        placeholder={t("Search any company, fund or ticker")}
         autoComplete="off"
         spellCheck={false}
         value={query}
@@ -110,7 +112,7 @@ export function MarketSearch() {
                   <span className="min-w-0">
                     <span className="block truncate text-[14.5px] text-ink">{hit.name}</span>
                     <span className="text-[12.5px] text-ink-3">
-                      {hit.type === "etf" ? "Fund" : "Share"}
+                      {hit.type === "etf" ? t("Fund") : t("Share")}
                       {hit.exchange ? `, ${hit.exchange}` : ""}
                     </span>
                   </span>
@@ -119,7 +121,7 @@ export function MarketSearch() {
               </li>
             ))
           ) : (
-            <li className="px-4 py-3 text-[14px] text-ink-3">{loading ? "Searching" : `Nothing found for “${query.trim()}”.`}</li>
+            <li className="px-4 py-3 text-[14px] text-ink-3">{loading ? t("Searching") : t("Nothing found for “{query}”.", { query: query.trim() })}</li>
           )}
         </ul>
       ) : null}

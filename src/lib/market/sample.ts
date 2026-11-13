@@ -60,7 +60,7 @@ function series(entry: UniverseEntry, now: number): Candle[] {
 }
 
 const CURRENCY_BY_SUFFIX: Record<string, string> = {
-  DE: "EUR", AS: "EUR", PA: "EUR", MC: "EUR", MI: "EUR", LS: "EUR", SW: "CHF", CO: "DKK",
+  DE: "EUR", AS: "EUR", PA: "EUR", MC: "EUR", MI: "EUR", LS: "EUR", SW: "CHF", CO: "DKK", SA: "BRL",
 };
 
 function currencyOf(symbol: string): string {

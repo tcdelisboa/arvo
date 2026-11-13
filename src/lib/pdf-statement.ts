@@ -1,3 +1,4 @@
+import { msg } from "./i18n/core";
 import { parseDate, type ParsedRow, type ParsedStatement } from "./csv";
 import { parseAmountToCents } from "./format";
 
@@ -193,7 +194,7 @@ export function parsePdfStatement(lines: PdfLine[], today = new Date()): ParsedS
     return {
       rows: [],
       skipped: 0,
-      error: "This PDF has no text to read. It is probably a scan or a photo. Download the statement from your bank's website instead, as a PDF or CSV.",
+      error: msg("This PDF has no text to read. It is probably a scan or a photo. Download the statement from your bank's website instead, as a PDF or CSV."),
     };
   }
 
@@ -341,7 +342,7 @@ export function parsePdfStatement(lines: PdfLine[], today = new Date()): ParsedS
     return {
       rows: [],
       skipped,
-      error: "Arvo could not find any transactions in this PDF. Check that it is an account statement, or download it from your bank as CSV instead.",
+      error: msg("Arvo could not find any transactions in this PDF. Check that it is an account statement, or download it from your bank as CSV instead."),
     };
   }
 
@@ -454,7 +455,7 @@ export function parsePdfStatement(lines: PdfLine[], today = new Date()): ParsedS
       amountCents: draft.cents * (draft.sign < 0 ? -1 : 1),
     }));
   if (!rows.length) {
-    return { rows: [], skipped, error: "Arvo could not find any transactions in this PDF. Download it from your bank as CSV instead." };
+    return { rows: [], skipped, error: msg("Arvo could not find any transactions in this PDF. Download it from your bank as CSV instead.") };
   }
   return { rows, skipped };
 }

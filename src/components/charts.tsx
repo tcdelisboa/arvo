@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
-import { money, month as monthLabel, price as priceLabel } from "@/lib/format";
+import { useI18n } from "./i18n";
+import type { Fmt } from "@/lib/format";
 
 /**
  * Charts, drawn by hand in SVG so they follow the design tokens exactly.
@@ -34,15 +35,20 @@ export function niceTicks(max: number, count = 4): number[] {
   return ticks;
 }
 
-function compactMoney(cents: number, currency: string): string {
+function compactMoney(f: Fmt, cents: number, currency: string): string {
   const value = cents / 100;
-  const symbol = money(0, currency, { whole: true }).replace(/[\d.,\s]/g, "");
-  if (Math.abs(value) >= 1_000_000) return `${symbol}${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)}M`;
+  const symbol = f.money(0, currency, { whole: true }).replace(/[\d.,\s]/g, "");
+  const pt = f.lang === "pt";
+  if (Math.abs(value) >= 1_000_000) {
+    const m = f.number(value / 1_000_000, value % 1_000_000 === 0 ? 0 : 1);
+    return pt ? `${symbol}${m} mi` : `${symbol}${m}M`;
+  }
   if (Math.abs(value) >= 1000) {
     const k = value / 1000;
-    return `${symbol}${Number.isInteger(k) ? k : k.toFixed(1)}K`;
+    const text = f.number(k, Number.isInteger(k) ? 0 : 1);
+    return pt ? `${symbol}${text} mil` : `${symbol}${text}K`;
   }
-  return `${symbol}${Math.round(value).toLocaleString("en-GB")}`;
+  return `${symbol}${f.number(Math.round(value), 0)}`;
 }
 
 function Legend({ items }: { items: { label: string; swatch: ReactNode }[] }) {
@@ -87,6 +93,9 @@ export function MonthColumns({
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [active, setActive] = useState<number | null>(null);
+  const { t: tr, f } = useI18n();
+  const money = f.money;
+  const monthLabel = f.month;
   const pad = { top: 12, right: 4, bottom: 26, left: 46 };
   const innerW = Math.max(0, width - pad.left - pad.right);
   const innerH = height - pad.top - pad.bottom;
@@ -111,19 +120,19 @@ export function MonthColumns({
     <div>
       <Legend
         items={[
-          { label: "Money in", swatch: <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: "var(--s-muted)" }} /> },
-          { label: "Spending", swatch: <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: "var(--s1)" }} /> },
+          { label: tr("Money in"), swatch: <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: "var(--s-muted)" }} /> },
+          { label: tr("Spending"), swatch: <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: "var(--s1)" }} /> },
         ]}
       />
       <div ref={ref} className="relative mt-3" style={{ height }}>
         {width > 0 ? (
           <>
-            <svg width={width} height={height} role="img" aria-label="Money in and spending per month">
+            <svg width={width} height={height} role="img" aria-label={tr("Money in and spending per month")}>
               {ticks.map((t) => (
                 <g key={t}>
                   <line x1={pad.left} x2={width - pad.right} y1={y(t)} y2={y(t)} stroke="var(--line)" />
                   <text x={pad.left - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize="11.5" fill="var(--ink-3)" className="tnum">
-                    {compactMoney(t, currency)}
+                    {compactMoney(f, t, currency)}
                   </text>
                 </g>
               ))}
@@ -154,11 +163,11 @@ export function MonthColumns({
               <Tooltip x={pad.left + band * active + band / 2} width={width}>
                 <p className="mb-1 font-medium text-ink">{monthLabel(data[active].ym, "long")}</p>
                 <p className="flex justify-between gap-3 text-ink-2">
-                  <span>Money in</span>
+                  <span>{tr("Money in")}</span>
                   <span className="tnum text-ink">{money(data[active].income, currency, { whole: true })}</span>
                 </p>
                 <p className="flex justify-between gap-3 text-ink-2">
-                  <span>Spending</span>
+                  <span>{tr("Spending")}</span>
                   <span className="tnum text-ink">{money(data[active].spending, currency, { whole: true })}</span>
                 </p>
               </Tooltip>
@@ -167,9 +176,9 @@ export function MonthColumns({
         ) : null}
       </div>
       <table className="sr-only">
-        <caption>Money in and spending per month</caption>
+        <caption>{tr("Money in and spending per month")}</caption>
         <thead>
-          <tr><th>Month</th><th>Money in</th><th>Spending</th></tr>
+          <tr><th>{tr("Month")}</th><th>{tr("Money in")}</th><th>{tr("Spending")}</th></tr>
         </thead>
         <tbody>
           {data.map((d) => (
@@ -201,6 +210,8 @@ export function PriceLine({
   const [ref, width] = useWidth<HTMLDivElement>();
   const [active, setActive] = useState<number | null>(null);
   const gradient = useId();
+  const { t: tr, f, lang } = useI18n();
+  const priceLabel = f.price;
   const pad = { top: 14, right: 8, bottom: 24, left: 8 };
   const innerW = Math.max(0, width - pad.left - pad.right);
   const innerH = height - pad.top - pad.bottom;
@@ -225,7 +236,7 @@ export function PriceLine({
 
   const up = points.length > 1 && points[points.length - 1].c >= points[0].c;
   const stroke = up ? "var(--pos)" : "var(--neg)";
-  const date = (t: number) => new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const date = (t: number) => new Date(t).toLocaleDateString(lang === "pt" ? "pt-BR" : "en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
   const onMove = (clientX: number, target: SVGSVGElement) => {
     if (!geometry) return;
@@ -252,7 +263,7 @@ export function PriceLine({
             width={width}
             height={height}
             role="img"
-            aria-label={`Price from ${date(geometry.t0)} to ${date(geometry.t1)}`}
+            aria-label={tr("Price from {from} to {to}", { from: date(geometry.t0), to: date(geometry.t1) })}
             className="touch-pan-y"
             onPointerMove={(e) => onMove(e.clientX, e.currentTarget)}
             onPointerDown={(e) => onMove(e.clientX, e.currentTarget)}
@@ -294,7 +305,7 @@ export function PriceLine({
         </>
       ) : (
         <div className="flex h-full items-center justify-center text-[13.5px] text-ink-3">
-          {points.length < 2 ? "No price history available." : null}
+          {points.length < 2 ? tr("No price history available.") : null}
         </div>
       )}
     </div>
@@ -318,6 +329,8 @@ export function ProjectionChart({
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [active, setActive] = useState<number | null>(null);
+  const { t: tr, f } = useI18n();
+  const money = f.money;
   const pad = { top: 12, right: 10, bottom: 26, left: 48 };
   const innerW = Math.max(0, width - pad.left - pad.right);
   const innerH = height - pad.top - pad.bottom;
@@ -339,9 +352,9 @@ export function ProjectionChart({
     <div>
       <Legend
         items={[
-          { label: "Likely value", swatch: <span className="h-0.5 w-4 rounded-full" style={{ background: "var(--s1)" }} /> },
-          { label: "Range of outcomes", swatch: <span className="h-2.5 w-4 rounded-[3px]" style={{ background: "var(--s1)", opacity: 0.18 }} /> },
-          { label: "What you paid in", swatch: <span className="h-0.5 w-4 rounded-full" style={{ background: "var(--s-muted)" }} /> },
+          { label: tr("Likely value"), swatch: <span className="h-0.5 w-4 rounded-full" style={{ background: "var(--s1)" }} /> },
+          { label: tr("Range of outcomes"), swatch: <span className="h-2.5 w-4 rounded-[3px]" style={{ background: "var(--s1)", opacity: 0.18 }} /> },
+          { label: tr("What you paid in"), swatch: <span className="h-0.5 w-4 rounded-full" style={{ background: "var(--s-muted)" }} /> },
         ]}
       />
       <div ref={ref} className="relative mt-3" style={{ height }}>
@@ -351,7 +364,7 @@ export function ProjectionChart({
               width={width}
               height={height}
               role="img"
-              aria-label={`Projected value over ${years} years`}
+              aria-label={tr("Projected value over {n} years", { n: years })}
               className="touch-pan-y"
               onPointerMove={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
@@ -364,13 +377,13 @@ export function ProjectionChart({
                 <g key={t}>
                   <line x1={pad.left} x2={width - pad.right} y1={y(t)} y2={y(t)} stroke="var(--line)" />
                   <text x={pad.left - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize="11.5" fill="var(--ink-3)" className="tnum">
-                    {compactMoney(t, currency)}
+                    {compactMoney(f, t, currency)}
                   </text>
                 </g>
               ))}
               {yearTicks.map((d) => (
                 <text key={d.year} x={x(d.year)} y={height - 8} textAnchor={d.year === 0 ? "start" : d.year === years ? "end" : "middle"} fontSize="11.5" fill="var(--ink-3)">
-                  {d.year === 0 ? "Today" : `${d.year}y`}
+                  {d.year === 0 ? tr("Today") : tr("{n}y", { n: d.year })}
                 </text>
               ))}
               <path d={band} fill="var(--s1)" opacity="0.14" />
@@ -388,10 +401,10 @@ export function ProjectionChart({
             </svg>
             {point ? (
               <Tooltip x={x(point.year)} width={width}>
-                <p className="mb-1 font-medium text-ink">{point.year === 0 ? "Today" : `After ${point.year} ${point.year === 1 ? "year" : "years"}`}</p>
-                <p className="flex justify-between gap-3 text-ink-2"><span>Likely value</span><span className="tnum text-ink">{money(point.mid, currency, { whole: true })}</span></p>
-                <p className="flex justify-between gap-3 text-ink-2"><span>Range</span><span className="tnum text-ink">{compactMoney(point.low, currency)} to {compactMoney(point.high, currency)}</span></p>
-                <p className="flex justify-between gap-3 text-ink-2"><span>Paid in</span><span className="tnum text-ink">{money(point.paid, currency, { whole: true })}</span></p>
+                <p className="mb-1 font-medium text-ink">{point.year === 0 ? tr("Today") : point.year === 1 ? tr("After 1 year") : tr("After {n} years", { n: point.year })}</p>
+                <p className="flex justify-between gap-3 text-ink-2"><span>{tr("Likely value")}</span><span className="tnum text-ink">{money(point.mid, currency, { whole: true })}</span></p>
+                <p className="flex justify-between gap-3 text-ink-2"><span>{tr("Range")}</span><span className="tnum text-ink">{tr("{low} to {high}", { low: compactMoney(f, point.low, currency), high: compactMoney(f, point.high, currency) })}</span></p>
+                <p className="flex justify-between gap-3 text-ink-2"><span>{tr("Paid in")}</span><span className="tnum text-ink">{money(point.paid, currency, { whole: true })}</span></p>
               </Tooltip>
             ) : null}
           </>

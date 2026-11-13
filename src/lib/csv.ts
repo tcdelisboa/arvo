@@ -1,3 +1,4 @@
+import { msg } from "./i18n/core";
 import Papa from "papaparse";
 import { parseAmountToCents } from "./format";
 
@@ -158,11 +159,11 @@ export function detectDelimiter(input: string): string {
 
 export function parseStatement(text: string): ParsedStatement {
   const input = text.replace(/^﻿/, "");
-  if (!input.trim()) return { rows: [], skipped: 0, error: "The file is empty." };
+  if (!input.trim()) return { rows: [], skipped: 0, error: msg("The file is empty.") };
 
   const parsed = Papa.parse<string[]>(input, { skipEmptyLines: "greedy", delimiter: detectDelimiter(input) });
   const table = (parsed.data as string[][]).filter((row) => row.some((cell) => String(cell ?? "").trim() !== ""));
-  if (table.length < 2) return { rows: [], skipped: 0, error: "We couldn't find any rows in this file." };
+  if (table.length < 2) return { rows: [], skipped: 0, error: msg("We couldn't find any rows in this file.") };
 
   // 1. Find the header row; banks often put account details above it.
   let headerIndex = -1;
@@ -208,7 +209,7 @@ export function parseStatement(text: string): ParsedStatement {
       return {
         rows: [],
         skipped: 0,
-        error: "We couldn't find date and amount columns. Export the statement as CSV with a header row and try again.",
+        error: msg("We couldn't find date and amount columns. Export the statement as CSV with a header row and try again."),
       };
     }
     columns = { date: bestDate, amount: bestAmount, description: bestText >= 0 ? bestText : undefined };
@@ -250,7 +251,7 @@ export function parseStatement(text: string): ParsedStatement {
   }
 
   if (!rows.length) {
-    return { rows, skipped, error: "We read the file but found no transactions with a date and an amount." };
+    return { rows, skipped, error: msg("We read the file but found no transactions with a date and an amount.") };
   }
   return { rows, skipped };
 }

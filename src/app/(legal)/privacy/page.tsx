@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
+import { getI18n, titled } from "@/lib/i18n/server";
+import { msg } from "@/lib/i18n/core";
 import { LEGAL } from "@/lib/legal";
+import { Portuguese } from "./pt";
 
-export const metadata: Metadata = { title: "Privacy notice" };
+export const generateMetadata = titled(msg("Privacy notice"));
 
-export default function PrivacyPage() {
+function English() {
   return (
     <>
       <h1>Privacy notice</h1>
@@ -22,7 +24,7 @@ export default function PrivacyPage() {
         <li><strong>Watchlist:</strong> the shares and funds you choose to follow.</li>
         <li><strong>Waitlist:</strong> if you ask to hear when Arvo opens, your email address, what you said you want Arvo for, and which link brought you here. We use it only to tell you about the launch, and delete it when you ask.</li>
         <li><strong>Plan and use:</strong> which plan you are on, whether you asked to be told when Plus opens, and the dates on which you used Arvo. We use the dates to see whether people come back, not what you looked at.</li>
-        <li><strong>Technical data:</strong> one session cookie that keeps you signed in, and your IP address in short-lived security logs that limit repeated sign-in attempts.</li>
+        <li><strong>Technical data:</strong> one session cookie that keeps you signed in, one cookie that remembers the language you chose, and your IP address in short-lived security logs that limit repeated sign-in attempts.</li>
       </ul>
       <p>We do not use advertising or tracking cookies, and we do not sell or rent personal data.</p>
 
@@ -75,4 +77,9 @@ export default function PrivacyPage() {
       <p>If we change how we use personal data, we will update this notice and tell you about significant changes before they take effect.</p>
     </>
   );
+}
+
+export default async function PrivacyPage() {
+  const { lang } = await getI18n();
+  return lang === "pt" ? <Portuguese /> : <English />;
 }

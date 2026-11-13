@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import { getI18n, titled } from "@/lib/i18n/server";
+import { msg } from "@/lib/i18n/core";
 import Link from "next/link";
 import { Download, LogOut } from "lucide-react";
 import { requireUser } from "@/lib/auth";
@@ -9,41 +10,50 @@ import { buttonClass, cx, fieldClass, PageHeader, Panel, PanelHeader } from "@/c
 import { DeleteForm, NameForm, PasswordForm } from "@/components/settings-forms";
 import { SubmitButton } from "@/components/submit-button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LangSwitch } from "@/components/lang-switch";
 
-export const metadata: Metadata = { title: "Settings" };
+export const generateMetadata = titled(msg("Settings"));
 
 export default async function SettingsPage() {
   const user = await requireUser();
+  const { t } = await getI18n();
   return (
     <>
-      <PageHeader title="Settings" />
+      <PageHeader title={t("Settings")} />
       <div className="max-w-[760px] space-y-5">
         <Panel>
-          <PanelHeader title="You" />
+          <PanelHeader title={t("You")} />
           <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
             <NameForm name={user.name} email={user.email} />
           </div>
         </Panel>
 
         <Panel>
-          <PanelHeader title="Preferences" />
+          <PanelHeader title={t("Preferences")} />
           <div className="space-y-5 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
             <form action={setCurrency} className="flex flex-wrap items-end gap-2">
               <div>
-                <label htmlFor="currency" className="mb-1.5 block text-[13.5px] font-medium text-ink">Currency</label>
+                <label htmlFor="currency" className="mb-1.5 block text-[13.5px] font-medium text-ink">{t("Currency")}</label>
                 <select id="currency" name="currency" defaultValue={user.currency} key={user.currency} className={cx(fieldClass, "block h-11 w-[160px] px-3 text-base sm:text-[15px]")}>
                   {CURRENCIES.map((code) => (
                     <option key={code} value={code}>{code}</option>
                   ))}
                 </select>
               </div>
-              <SubmitButton variant="secondary" pendingLabel="Saving">Save</SubmitButton>
+              <SubmitButton variant="secondary" pendingLabel={t("Saving")}>{t("Save")}</SubmitButton>
             </form>
-            <p className="-mt-2 text-[13px] text-ink-3">Amounts are shown in this currency. Changing it does not convert existing transactions.</p>
+            <p className="-mt-2 text-[13px] text-ink-3">{t("Amounts are shown in this currency. Changing it does not convert existing transactions.")}</p>
             <div className="flex items-center justify-between gap-4 border-t border-line pt-4">
               <div>
-                <p className="text-[13.5px] font-medium text-ink">Appearance</p>
-                <p className="text-[13px] text-ink-3">Follows your device until you choose.</p>
+                <p className="text-[13.5px] font-medium text-ink">{t("Language")}</p>
+                <p className="text-[13px] text-ink-3">{t("English or Brazilian Portuguese.")}</p>
+              </div>
+              <LangSwitch />
+            </div>
+            <div className="flex items-center justify-between gap-4 border-t border-line pt-4">
+              <div>
+                <p className="text-[13.5px] font-medium text-ink">{t("Appearance")}</p>
+                <p className="text-[13px] text-ink-3">{t("Follows your device until you choose.")}</p>
               </div>
               <ThemeToggle labelled className="border border-line-strong" />
             </div>
@@ -51,30 +61,30 @@ export default async function SettingsPage() {
         </Panel>
 
         <Panel>
-          <PanelHeader title="Accounts and data" note="Where your transactions come from, and a copy of everything Arvo holds about you." />
+          <PanelHeader title={t("Accounts and data")} note={t("Where your transactions come from, and a copy of everything Arvo holds about you.")} />
           <div className="flex flex-wrap gap-2 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
-            <Link href="/accounts" className={buttonClass("secondary", "md")}>Manage accounts</Link>
-            <a href="/api/me" download className={buttonClass("secondary", "md")}><Download size={17} /> Download my data</a>
+            <Link href="/accounts" className={buttonClass("secondary", "md")}>{t("Manage accounts")}</Link>
+            <a href="/api/me" download className={buttonClass("secondary", "md")}><Download size={17} /> {t("Download my data")}</a>
           </div>
         </Panel>
 
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
             <div>
-              <h2 className="text-[17px] font-semibold text-ink">Plan</h2>
+              <h2 className="text-[17px] font-semibold text-ink">{t("Plan")}</h2>
               <p className="text-[13.5px] text-ink-3">
-                {user.plan === "plus" ? "You are on Plus." : "You are on Free."}
+                {user.plan === "plus" ? t("You are on Plus.") : t("You are on Free.")}
               </p>
             </div>
             <span className="flex flex-wrap gap-2">
               {user.isAdmin ? <Link href="/admin" className={buttonClass("secondary", "md")}>Admin</Link> : null}
-              <Link href="/plus" className={buttonClass("secondary", "md")}>{user.plan === "plus" ? "What Plus includes" : "See Plus"}</Link>
+              <Link href="/plus" className={buttonClass("secondary", "md")}>{user.plan === "plus" ? t("What Plus includes") : t("See Plus")}</Link>
             </span>
           </div>
         </Panel>
 
         <Panel>
-          <PanelHeader title="Password" />
+          <PanelHeader title={t("Password")} />
           <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
             <PasswordForm />
           </div>
@@ -83,26 +93,26 @@ export default async function SettingsPage() {
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
             <div>
-              <h2 className="text-[17px] font-semibold text-ink">Sign out</h2>
-              <p className="text-[13.5px] text-ink-3">Signed in as {user.email}</p>
+              <h2 className="text-[17px] font-semibold text-ink">{t("Sign out")}</h2>
+              <p className="text-[13.5px] text-ink-3">{t("Signed in as {email}", { email: user.email })}</p>
             </div>
             <form action={logout}>
-              <SubmitButton variant="secondary" pendingLabel="Signing out"><LogOut size={16} /> Sign out</SubmitButton>
+              <SubmitButton variant="secondary" pendingLabel={t("Signing out")}><LogOut size={16} /> {t("Sign out")}</SubmitButton>
             </form>
           </div>
         </Panel>
 
         <Panel>
-          <PanelHeader title="Delete account" note="Removes your account, transactions and investor profile. This cannot be undone." />
+          <PanelHeader title={t("Delete account")} note={t("Removes your account, transactions and investor profile. This cannot be undone.")} />
           <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
             <DeleteForm />
           </div>
         </Panel>
 
         <p className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-ink-3">
-          <Link href="/terms" className="underline underline-offset-2">Terms</Link>
-          <Link href="/privacy" className="underline underline-offset-2">Privacy</Link>
-          <Link href="/risk" className="underline underline-offset-2">Risk notice</Link>
+          <Link href="/terms" className="underline underline-offset-2">{t("Terms")}</Link>
+          <Link href="/privacy" className="underline underline-offset-2">{t("Privacy")}</Link>
+          <Link href="/risk" className="underline underline-offset-2">{t("Risk notice")}</Link>
         </p>
       </div>
     </>

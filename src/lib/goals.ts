@@ -1,28 +1,30 @@
+import { msg } from "./i18n/core";
+
 /** What a person says they came for, asked once on the welcome screen. */
 export const GOALS = [
   {
     id: "spending",
-    title: "See where my money goes",
-    text: "Sort every payment into categories and find the big costs.",
-    short: "Track spending",
+    title: msg("See where my money goes"),
+    text: msg("Sort every payment into categories and find the big costs."),
+    short: msg("Track spending"),
   },
   {
     id: "saving",
-    title: "Spend less and save more",
-    text: "Spot the regular payments and habits worth cutting.",
-    short: "Save more",
+    title: msg("Spend less and save more"),
+    text: msg("Spot the regular payments and habits worth cutting."),
+    short: msg("Save more"),
   },
   {
     id: "investing",
-    title: "Start investing",
-    text: "Find out what kind of investor I am and what a suitable portfolio looks like.",
-    short: "Start investing",
+    title: msg("Start investing"),
+    text: msg("Find out what kind of investor I am and what a suitable portfolio looks like."),
+    short: msg("Start investing"),
   },
   {
     id: "learning",
-    title: "Understand shares and funds",
-    text: "Look up companies and funds and read what they are in plain words.",
-    short: "Learn about markets",
+    title: msg("Understand shares and funds"),
+    text: msg("Look up companies and funds and read what they are in plain words."),
+    short: msg("Learn about markets"),
   },
 ] as const;
 

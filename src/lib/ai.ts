@@ -4,6 +4,12 @@ import { cacheGet, cacheSet } from "./db";
 import { sha256 } from "./crypto";
 import { categoryLabel } from "./categories";
 import type { Insight } from "./insights";
+import type { Lang } from "./i18n/core";
+
+const LANGUAGE: Record<Lang, string> = {
+  en: "Write in British English.",
+  pt: "Write in Brazilian Portuguese, in a natural, informal register (você).",
+};
 import type { CategoryTotal, MonthSummary, Recurring } from "./spending";
 
 /**
@@ -45,6 +51,7 @@ export type AiInput = {
   categories: CategoryTotal[];
   recurring: Recurring[];
   calculated: Insight[];
+  lang: Lang;
 };
 
 async function ask(system: string, prompt: string, maxTokens: number): Promise<string | null> {
@@ -90,7 +97,7 @@ export async function aiInsights(input: AiInput): Promise<Insight[] | null> {
     recurringCharges: input.recurring.slice(0, 15),
     alreadyCalculated: input.calculated.map((i) => ({ title: i.title, saveCents: i.saveCents })),
   };
-  const key = `ai-insights:${input.userId}:${sha256(JSON.stringify(facts)).slice(0, 24)}`;
+  const key = `ai-insights:${input.lang}:${input.userId}:${sha256(JSON.stringify(facts)).slice(0, 24)}`;
 
   try {
     const cached = await cacheGet<Insight[]>(key);
@@ -106,7 +113,8 @@ export async function aiInsights(input: AiInput): Promise<Insight[] | null> {
       '{"insights":[{"title":string,"body":string,"saveCents":integer,"category":string}]}. ' +
       "Give 4 to 6 insights, most valuable first. title is under 80 characters and states the finding. " +
       "body is 2 to 3 sentences with the evidence and one concrete action. saveCents is your realistic estimate of the monthly saving in cents (0 if informational). " +
-      "category is one of the category keys provided, or omitted.";
+      "category is one of the category keys provided, or omitted. " +
+      LANGUAGE[input.lang];
 
     const text = await ask(system, JSON.stringify(facts), 1500);
     if (!text) return null;
@@ -135,17 +143,21 @@ export async function aiFitNote(input: {
   fitLabel: string;
   reasons: string[];
   description: string | null;
+  lang: Lang;
 }): Promise<string | null> {
   if (!aiEnabled()) return null;
-  const key = `ai-fit:${input.symbol}:${input.profile}:${sha256(input.reasons.join("|")).slice(0, 16)}`;
+  const key = `ai-fit:${input.lang}:${input.symbol}:${input.profile}:${sha256(input.reasons.join("|")).slice(0, 16)}`;
   try {
     const cached = await cacheGet<{ text: string }>(key);
     if (cached) return cached.text;
     const system =
       "You are Arvo, a plain-spoken guide inside a beginner investing app. In 3 sentences at most, explain to a beginner what this asset is " +
       "and how it relates to their investor profile, using only the facts given. This is education, not advice: " +
-      "never say buy, sell, hold or recommend; never predict prices. Sentence case, no emojis, no exclamation marks, no markdown.";
-    const text = await ask(system, JSON.stringify(input), 300);
+      "never say buy, sell, hold or recommend; never predict prices. Sentence case, no emojis, no exclamation marks, no markdown. " +
+      LANGUAGE[input.lang];
+    const { lang: _lang, ...facts } = input;
+    void _lang;
+    const text = await ask(system, JSON.stringify(facts), 300);
     if (!text) return null;
     const clean = text.replace(/\s+/g, " ").slice(0, 700);
     await cacheSet(key, { text: clean }, 7 * 24 * 3600);

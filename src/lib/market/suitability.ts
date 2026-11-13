@@ -1,6 +1,7 @@
 import type { Level } from "../risk";
 import type { AssetType, Candle, Metrics } from "./types";
 import type { UniverseEntry } from "./universe";
+import { enT, msg, type T } from "../i18n/core";
 
 /**
  * How well an asset fits a person's investor profile.
@@ -47,7 +48,7 @@ export function volatilityFrom(candles: Candle[]): number | null {
   return Math.sqrt(variance * perYear) * 100;
 }
 
-const RISK_LABELS = ["Very low", "Low", "Moderate", "High", "Very high"];
+const RISK_LABELS = [msg("Very low"), msg("Low"), msg("Moderate"), msg("High"), msg("Very high")];
 
 function riskFromVolatility(vol: number): number {
   if (vol < 3) return 1;
@@ -60,7 +61,7 @@ function riskFromVolatility(vol: number): number {
   return 5;
 }
 
-export function assessFit(input: FitInput, level: Level): Fit {
+export function assessFit(input: FitInput, level: Level, t: T = enT): Fit {
   const { type, metrics, volatility, known } = input;
   const reasons: Fit["reasons"] = [];
   const isFund = type === "etf";
@@ -82,25 +83,25 @@ export function assessFit(input: FitInput, level: Level): Fit {
   if (!isFund) {
     if (metrics.marketCap !== null && metrics.marketCap < 2e9) {
       risk += 0.5;
-      reasons.push({ tone: "minus", text: "It is a small company. Small companies fail more often and their shares are harder to sell in a panic." });
+      reasons.push({ tone: "minus", text: t("It is a small company. Small companies fail more often and their shares are harder to sell in a panic.") });
     } else if (metrics.marketCap !== null && metrics.marketCap > 100e9) {
-      reasons.push({ tone: "plus", text: "It is one of the largest listed companies in the world, which usually means a more resilient business." });
+      reasons.push({ tone: "plus", text: t("It is one of the largest listed companies in the world, which usually means a more resilient business.") });
     }
     if (metrics.profitMargin !== null && metrics.profitMargin < 0) {
       risk += 0.5;
-      reasons.push({ tone: "minus", text: "The company is currently losing money, so its share price depends on profits that have not arrived yet." });
+      reasons.push({ tone: "minus", text: t("The company is currently losing money, so its share price depends on profits that have not arrived yet.") });
     } else if (metrics.profitMargin !== null && metrics.profitMargin >= 15) {
-      reasons.push({ tone: "plus", text: `It keeps about ${Math.round(metrics.profitMargin)}% of sales as profit, a sign of a strong business.` });
+      reasons.push({ tone: "plus", text: t("It keeps about {n}% of sales as profit, a sign of a strong business.", { n: Math.round(metrics.profitMargin) }) });
     }
     if (metrics.debtToEquity !== null && metrics.debtToEquity > 200) {
       risk += 0.25;
-      reasons.push({ tone: "minus", text: "It carries a lot of debt relative to its equity, which hurts most when times are hard." });
+      reasons.push({ tone: "minus", text: t("It carries a lot of debt relative to its equity, which hurts most when times are hard.") });
     }
     if (metrics.trailingPE !== null && metrics.trailingPE > 45) {
-      reasons.push({ tone: "minus", text: `Investors pay about ${Math.round(metrics.trailingPE)} times its yearly profit. High expectations leave little room for disappointment.` });
+      reasons.push({ tone: "minus", text: t("Investors pay about {n} times its yearly profit. High expectations leave little room for disappointment.", { n: Math.round(metrics.trailingPE) }) });
     }
     if (metrics.dividendYield !== null && metrics.dividendYield >= 2.5) {
-      reasons.push({ tone: "plus", text: `It pays a dividend of about ${metrics.dividendYield.toFixed(1)}% a year, which softens the wait during flat periods.` });
+      reasons.push({ tone: "plus", text: t("It pays a dividend of about {n}% a year, which softens the wait during flat periods.", { n: metrics.dividendYield.toFixed(1) }) });
     }
   }
   risk = Math.min(5, Math.max(1, risk));
@@ -114,29 +115,29 @@ export function assessFit(input: FitInput, level: Level): Fit {
       tone: "minus",
       text:
         volatility !== null
-          ? `Its price has moved about ${Math.round(volatility)}% a year, more than your profile is built to absorb.`
-          : "Its price typically swings more than your profile is built to absorb.",
+          ? t("Its price has moved about {n}% a year, more than your profile is built to absorb.", { n: Math.round(volatility) })
+          : t("Its price typically swings more than your profile is built to absorb."),
     });
   } else if (gap < -2) {
     score -= 12;
-    reasons.unshift({ tone: "note", text: "It is much steadier than your profile needs. Fine as a stabiliser, but too much of it will slow your growth." });
+    reasons.unshift({ tone: "note", text: t("It is much steadier than your profile needs. Fine as a stabiliser, but too much of it will slow your growth.") });
   } else {
     reasons.unshift({
       tone: "plus",
       text:
         volatility !== null
-          ? `Its price has moved about ${Math.round(volatility)}% a year, within what your profile can absorb.`
-          : "Its typical price swings are within what your profile can absorb.",
+          ? t("Its price has moved about {n}% a year, within what your profile can absorb.", { n: Math.round(volatility) })
+          : t("Its typical price swings are within what your profile can absorb."),
     });
   }
 
   // 4. Concentration.
   if (broad) {
     score += 5;
-    reasons.push({ tone: "plus", text: "It is a diversified fund: one purchase spreads your money across hundreds or thousands of holdings." });
+    reasons.push({ tone: "plus", text: t("It is a diversified fund: one purchase spreads your money across hundreds or thousands of holdings.") });
   } else if (isFund) {
     score -= 8;
-    reasons.push({ tone: "minus", text: "It is a narrow fund focused on one theme or sector, so it is far less diversified than a global fund." });
+    reasons.push({ tone: "minus", text: t("It is a narrow fund focused on one theme or sector, so it is far less diversified than a global fund.") });
   } else {
     const penalty = level <= 2 ? 22 : level === 3 ? 16 : level === 4 ? 12 : 10;
     score -= penalty;
@@ -144,13 +145,14 @@ export function assessFit(input: FitInput, level: Level): Fit {
       tone: "minus",
       text:
         level <= 2
-          ? "It is a single company. One bad result can cut its value sharply, which sits badly with a cautious plan."
-          : "It is a single company, so it carries risk that a fund would spread out. Keep it a small part of the whole.",
+          ? t("It is a single company. One bad result can cut its value sharply, which sits badly with a cautious plan.")
+          : t("It is a single company, so it carries risk that a fund would spread out. Keep it a small part of the whole."),
     });
   }
 
   score = Math.round(Math.min(100, Math.max(0, score)));
   const label: Fit["label"] = score >= 75 ? "Good fit" : score >= 55 ? "Reasonable fit" : score >= 35 ? "A stretch" : "Poor fit";
+  // Shown through t(): msg("Good fit"), msg("Reasonable fit"), msg("A stretch"), msg("Poor fit")
 
   // 5. A ceiling for the position.
   let maxWeight: number;
@@ -166,19 +168,19 @@ export function assessFit(input: FitInput, level: Level): Fit {
   const summary =
     label === "Good fit"
       ? broad
-        ? "This suits your profile and could be a core holding."
-        : "This suits your profile as a small part of a diversified portfolio."
+        ? t("This suits your profile and could be a core holding.")
+        : t("This suits your profile as a small part of a diversified portfolio.")
       : label === "Reasonable fit"
-        ? "This can work for your profile in a limited amount."
+        ? t("This can work for your profile in a limited amount.")
         : label === "A stretch"
-          ? "This asks for more risk than your profile is set up to take."
-          : "This does not match your profile.";
+          ? t("This asks for more risk than your profile is set up to take.")
+          : t("This does not match your profile.");
 
   return {
     score,
     label,
     risk,
-    riskLabel: RISK_LABELS[Math.min(4, Math.max(0, Math.round(risk) - 1))],
+    riskLabel: t(RISK_LABELS[Math.min(4, Math.max(0, Math.round(risk) - 1))]),
     summary,
     reasons: reasons.slice(0, 6),
     maxWeight,

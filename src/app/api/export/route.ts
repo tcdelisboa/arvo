@@ -4,12 +4,14 @@ import { listAccounts, listTransactions } from "@/lib/data";
 import { categoryLabel, isSpend } from "@/lib/categories";
 import { summarizeMonths, ymOf } from "@/lib/spending";
 import { todayIso } from "@/lib/format";
+import { getI18n } from "@/lib/i18n/server";
 
 /** The spending sheet as an Excel workbook: transactions, a category-by-month grid, and monthly totals. */
 export async function GET() {
   const user = await getUser();
-  if (!user) return new Response("Sign in to export your data.", { status: 401 });
-  if (user.plan !== "plus") return new Response("Excel export is part of Arvo Plus.", { status: 403 });
+  const { t } = await getI18n();
+  if (!user) return new Response(t("Sign in to export your data."), { status: 401 });
+  if (user.plan !== "plus") return new Response(t("Excel export is part of Arvo Plus."), { status: 403 });
 
   const [txs, accounts] = await Promise.all([listTransactions(user.id), listAccounts(user.id)]);
   const accountName = new Map(accounts.map((a) => [a.id, a.name]));
@@ -26,14 +28,14 @@ export async function GET() {
   };
 
   // 1. Every transaction.
-  const sheet = workbook.addWorksheet("Transactions");
+  const sheet = workbook.addWorksheet(t("Transactions"));
   sheet.columns = [
-    { header: "Date", key: "date", width: 12 },
-    { header: "Description", key: "description", width: 44 },
-    { header: "Merchant", key: "merchant", width: 26 },
-    { header: "Category", key: "category", width: 22 },
-    { header: "Account", key: "account", width: 24 },
-    { header: `Amount (${user.currency})`, key: "amount", width: 16 },
+    { header: t("Date"), key: "date", width: 12 },
+    { header: t("Description"), key: "description", width: 44 },
+    { header: t("Merchant"), key: "merchant", width: 26 },
+    { header: t("Category"), key: "category", width: 22 },
+    { header: t("Account"), key: "account", width: 24 },
+    { header: t("Amount ({currency})", { currency: user.currency }), key: "amount", width: 16 },
   ];
   for (const tx of txs) {
     const [y, m, d] = tx.date.split("-").map(Number);
@@ -41,7 +43,7 @@ export async function GET() {
       date: new Date(Date.UTC(y, m - 1, d)),
       description: tx.description,
       merchant: tx.merchant,
-      category: categoryLabel(tx.category),
+      category: t(categoryLabel(tx.category)),
       account: accountName.get(tx.accountId) ?? "",
       amount: tx.amountCents / 100,
     });
@@ -56,16 +58,16 @@ export async function GET() {
   const grid = new Map<string, Map<string, number>>();
   for (const tx of txs) {
     if (!isSpend(tx.category)) continue;
-    const label = categoryLabel(tx.category);
+    const label = t(categoryLabel(tx.category));
     const row = grid.get(label) ?? new Map<string, number>();
     row.set(ymOf(tx.date), (row.get(ymOf(tx.date)) ?? 0) - tx.amountCents);
     grid.set(label, row);
   }
-  const byCategory = workbook.addWorksheet("By category");
+  const byCategory = workbook.addWorksheet(t("By category"));
   byCategory.columns = [
-    { header: "Category", key: "category", width: 24 },
+    { header: t("Category"), key: "category", width: 24 },
     ...months.map((ym) => ({ header: ym, key: ym, width: 12 })),
-    { header: "Total", key: "total", width: 14 },
+    { header: t("Total"), key: "total", width: 14 },
   ];
   const labels = [...grid.keys()].sort(
     (a, b) => [...grid.get(b)!.values()].reduce((s, v) => s + v, 0) - [...grid.get(a)!.values()].reduce((s, v) => s + v, 0),
@@ -79,7 +81,7 @@ export async function GET() {
     byCategory.addRow(values);
   });
   if (labels.length && months.length) {
-    const totalRow: Record<string, unknown> = { category: "Total" };
+    const totalRow: Record<string, unknown> = { category: t("Total") };
     months.forEach((ym, i) => {
       const letter = byCategory.getColumn(i + 2).letter;
       totalRow[ym] = { formula: `SUM(${letter}2:${letter}${labels.length + 1})` };
@@ -94,13 +96,13 @@ export async function GET() {
   head(byCategory);
 
   // 3. Monthly totals.
-  const monthly = workbook.addWorksheet("Monthly");
+  const monthly = workbook.addWorksheet(t("Monthly"));
   monthly.columns = [
-    { header: "Month", key: "ym", width: 12 },
-    { header: "Money in", key: "income", width: 14 },
-    { header: "Spending", key: "spending", width: 14 },
-    { header: "To savings", key: "saved", width: 14 },
-    { header: "Left over", key: "net", width: 14 },
+    { header: t("Month"), key: "ym", width: 12 },
+    { header: t("Money in"), key: "income", width: 14 },
+    { header: t("Spending"), key: "spending", width: 14 },
+    { header: t("To savings"), key: "saved", width: 14 },
+    { header: t("Left over"), key: "net", width: 14 },
   ];
   summarizeMonths(txs).forEach((m, index) => {
     const r = index + 2;
