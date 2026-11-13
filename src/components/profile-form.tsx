@@ -209,7 +209,7 @@ export function ProfileForm({
       <div hidden={step !== 3} className="space-y-7">
         <Choices
           name="reaction"
-          legend="Your investments fall 20% in a few months. What do you do?"
+          legend={`You invested ${fmt(100000)} and in a few months it is worth ${fmt(80000)}. What do you do?`}
           help="Be honest. There is no right answer, only the one you would really give."
           choices={REACTION}
           value={values.reaction ?? ""}
@@ -218,9 +218,9 @@ export function ProfileForm({
         />
         <Choices
           name="tradeoff"
-          legend="Which range of results in a single year could you live with?"
-          help="Higher possible gains always come with deeper possible losses."
-          choices={TRADEOFF}
+          legend="Which kind of ride could you live with?"
+          help={`What ${fmt(100000)} could be worth after one year. Bigger possible gains always come with bigger possible falls.`}
+          choices={TRADEOFF.map((choice) => ({ ...choice, hint: `${fmt(Math.round(100000 * choice.range[0]))} to ${fmt(Math.round(100000 * choice.range[1]))}` }))}
           value={values.tradeoff ?? ""}
           error={errorFor("tradeoff")}
           onChange={set("tradeoff")}

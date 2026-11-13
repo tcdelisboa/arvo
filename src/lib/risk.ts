@@ -13,6 +13,8 @@
  */
 
 export type Choice = { value: string; label: string; hint?: string };
+/** A range of outcomes over one year, as multiples of the amount invested (0.98 = lost 2%). */
+export type RangeChoice = Choice & { range: [number, number] };
 
 export const HORIZON: Choice[] = [
   { value: "lt3", label: "Less than 3 years" },
@@ -54,11 +56,11 @@ export const REACTION: Choice[] = [
   { value: "buy", label: "Invest more while prices are lower" },
 ];
 
-export const TRADEOFF: Choice[] = [
-  { value: "a", label: "Between −2% and +4%", hint: "Barely moves" },
-  { value: "b", label: "Between −8% and +10%", hint: "Some movement" },
-  { value: "c", label: "Between −18% and +22%", hint: "Clearly bumpy" },
-  { value: "d", label: "Between −35% and +45%", hint: "A wild ride" },
+export const TRADEOFF: RangeChoice[] = [
+  { value: "a", label: "Calm: it barely moves", range: [0.98, 1.04] },
+  { value: "b", label: "Gentle: small ups and downs", range: [0.92, 1.1] },
+  { value: "c", label: "Bumpy: some years clearly up or down", range: [0.82, 1.22] },
+  { value: "d", label: "Rollercoaster: big years both ways", range: [0.65, 1.45] },
 ];
 
 export const GOAL: Choice[] = [
@@ -146,7 +148,7 @@ export function scoreRisk(a: Answers): RiskResult {
   else if (a.horizon === "3to5") cap(44, "With three to five years to invest, the plan is capped at Cautious.");
   if (a.debt === "yes") cap(44, "You have high-interest debt. Paying it off is a guaranteed return, so the plan stays cautious until it is gone.");
   if (a.buffer === "none") cap(64, "You don't have an emergency fund yet, so the plan stops at Balanced. A safety net keeps you from selling at a bad moment.");
-  if (a.reaction === "sell") cap(44, "You said you would sell after a 20% fall. A calmer plan is one you are more likely to stick with.");
+  if (a.reaction === "sell") cap(44, "You said you would sell after a sharp fall. A calmer plan is one you are more likely to stick with.");
 
   const level: Level = result < 25 ? 1 : result < 45 ? 2 : result < 65 ? 3 : result < 83 ? 4 : 5;
   return { capacity, tolerance, score: result, level, limits };

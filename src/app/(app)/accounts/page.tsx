@@ -91,24 +91,18 @@ export default async function AccountsPage() {
           </div>
         </Panel>
 
-        <Panel>
-          <PanelHeader title="Connect your bank" note="Read-only, through regulated open banking." />
-          <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
-            {bank ? (
-              <>
-                <p className="mb-4 text-[14px] text-ink-2">
-                  You sign in on your bank&apos;s own page. Arvo never sees your banking password and receives transactions only.
-                </p>
-                <BankConnect />
-              </>
-            ) : (
-              <p className="text-[14px] text-ink-2">
-                Direct bank connection is not available yet. Until it is, import a statement from your bank. It gives Arvo
-                exactly the same information.
+        {/* Direct bank connection stays hidden until an open banking provider is set up. */}
+        {bank ? (
+          <Panel>
+            <PanelHeader title="Connect your bank" note="Read-only, through regulated open banking." />
+            <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+              <p className="mb-4 text-[14px] text-ink-2">
+                You sign in on your bank&apos;s own page. Arvo never sees your banking password and receives transactions only.
               </p>
-            )}
-          </div>
-        </Panel>
+              <BankConnect />
+            </div>
+          </Panel>
+        ) : null}
 
         <Panel>
           <PanelHeader title="Import a statement" note="A CSV or PDF statement from your bank's website or app." />

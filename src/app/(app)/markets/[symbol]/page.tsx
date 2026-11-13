@@ -15,6 +15,8 @@ import { PROFILES, type Level } from "@/lib/risk";
 import { Badge, ButtonLink, cx, Notice, Panel, PanelHeader } from "@/components/ui";
 import { PriceChart } from "@/components/price-chart";
 import { WatchButton } from "@/components/watch-button";
+import { FitScale } from "@/components/fit-scale";
+import { StatementsPanel } from "@/components/statements-panel";
 
 export async function generateMetadata({ params }: PageProps<"/markets/[symbol]">): Promise<Metadata> {
   const symbol = normaliseSymbol((await params).symbol);
@@ -174,6 +176,12 @@ export default async function AssetPage({ params }: PageProps<"/markets/[symbol]
             </div>
           </Panel>
 
+          {!isFund ? (
+            <Suspense fallback={<Panel className="p-5 text-[14px] text-ink-3 sm:p-6">Loading financial statements…</Panel>}>
+              <StatementsPanel symbol={symbol} name={detail.name} />
+            </Suspense>
+          ) : null}
+
           <Panel>
             <PanelHeader title="News" />
             <div className="px-5 pb-5 pt-2 sm:px-6 sm:pb-6">
@@ -217,22 +225,13 @@ export default async function AssetPage({ params }: PageProps<"/markets/[symbol]
                   </p>
                 </div>
 
-                <div className="mt-5">
-                  <div className="relative h-1.5 rounded-full bg-sunken">
-                    <span
-                      className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface bg-ink"
-                      style={{ left: `${((fit.risk - 1) / 4) * 100}%` }}
-                    />
-                    <span
-                      className="absolute -top-1 h-3.5 w-0.5 -translate-x-1/2 bg-accent"
-                      style={{ left: `${((profile.level - 1) / 4) * 100}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 flex flex-wrap justify-between gap-x-4 text-[12.5px] text-ink-3">
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-ink" /> This asset: {fit.riskLabel.toLowerCase()} risk</span>
-                    <span className="flex items-center gap-1.5"><span className="h-3 w-0.5 bg-accent" /> Your profile</span>
-                  </div>
-                </div>
+                <FitScale
+                  risk={fit.risk}
+                  level={profile.level}
+                  labels={["Very low", "Low", "Moderate", "High", "Very high"]}
+                  assetLabel={`This asset: ${fit.riskLabel.toLowerCase()} risk`}
+                  zoneLabel={`Comfortable for a ${PROFILES[profile.level].name} profile`}
+                />
 
                 <p className="mt-5 text-[15px] font-medium text-ink">{fit.summary}</p>
                 <ul className="mt-3 space-y-2.5">

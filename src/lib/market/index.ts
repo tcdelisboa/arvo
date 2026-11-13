@@ -3,7 +3,7 @@ import { cacheGet, cacheSet } from "../db";
 import { sampleDetail, sampleHistory, sampleQuote, sampleSearch } from "./sample";
 import type { Candle, Detail, News, Quote, Range, SearchHit, Sourced } from "./types";
 import { UNIVERSE_BY_SYMBOL } from "./universe";
-import type { Check } from "./yahoo";
+import type { Check, Earnings, Statements } from "./yahoo";
 
 /**
  * The only door to market data. Every function:
@@ -19,7 +19,7 @@ const LIVE = process.env.MARKET_DATA !== "sample";
 const TIMEOUT_MS = 12_000;
 
 /** How long an answer counts as fresh, in seconds. */
-const TTL = { quote: 5 * 60, detail: 6 * 3600, history: 3600, news: 30 * 60, search: 24 * 3600 };
+const TTL = { quote: 5 * 60, detail: 6 * 3600, history: 3600, news: 30 * 60, search: 24 * 3600, statements: 24 * 3600 };
 /** How long the last good answer is kept to fall back on when the feed is down. */
 const KEEP = 14 * 86_400;
 
@@ -168,4 +168,15 @@ export async function marketStatus(): Promise<MarketStatus> {
   const status: MarketStatus = { mode: "live", checkedAt: Date.now(), checks: await yahooChecks() };
   statusCache.__arvoMarketStatus = status;
   return status;
+}
+
+/** Annual financial statements and the next results date, for shares only. Null when the feed has none. */
+export async function getStatements(symbol: string): Promise<{ statements: Statements; earnings: Earnings; asOf?: number } | null> {
+  const answer = await live("statements", `statements:${symbol}`, async () => {
+    const { yahooStatements, nextEarnings } = await import("./yahoo");
+    const statements = await yahooStatements(symbol);
+    if (!statements) return null;
+    return { statements, earnings: await nextEarnings(symbol, statements.lastQuarter) };
+  });
+  return answer ? { ...answer.value, ...(answer.stale ? { asOf: answer.asOf } : {}) } : null;
 }

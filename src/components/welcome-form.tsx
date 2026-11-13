@@ -7,7 +7,7 @@ import { GOALS, needsTransactions, type Goal } from "@/lib/goals";
 import { CURRENCIES, type Currency } from "@/lib/format";
 import { cx } from "./ui";
 
-const CURRENCY_NAME: Record<string, string> = { EUR: "Euro", USD: "US dollar", GBP: "Pound sterling" };
+const CURRENCY_NAME: Record<string, string> = { EUR: "Euro", BRL: "Brazilian real", USD: "US dollar", GBP: "Pound sterling" };
 
 type Start = { value: "import" | "invest" | "markets" | "sample"; icon: LucideIcon; title: string; text: string };
 
@@ -101,7 +101,7 @@ export function WelcomeForm({ first, currency, bank }: { first: string; currency
 
       <fieldset className="mt-8">
         <legend className="mb-2 text-[13.5px] font-medium text-ink">Your currency</legend>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {CURRENCIES.map((code) => (
             <label
               key={code}

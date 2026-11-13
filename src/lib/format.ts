@@ -1,4 +1,4 @@
-export const CURRENCIES = ["EUR", "USD", "GBP"] as const;
+export const CURRENCIES = ["EUR", "BRL", "USD", "GBP"] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
 export function isCurrency(value: unknown): value is Currency {

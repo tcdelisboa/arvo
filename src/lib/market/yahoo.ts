@@ -503,3 +503,131 @@ export async function yahooChecks(): Promise<Check[]> {
     }),
   ]);
 }
+
+/* ------------------------------- financial statements ------------------------------- */
+
+export type StatementRow = { label: string; values: (number | null)[]; perShare?: boolean };
+export type Statements = {
+  currency: string | null;
+  /** Fiscal year end dates, oldest first. */
+  years: string[];
+  income: StatementRow[];
+  balance: StatementRow[];
+  cashflow: StatementRow[];
+  /** Last fiscal quarter end, for estimating the next results date. */
+  lastQuarter: string | null;
+};
+
+const STATEMENT_LINES: Record<"income" | "balance" | "cashflow", [string, string, boolean?][]> = {
+  income: [
+    ["annualTotalRevenue", "Revenue"],
+    ["annualCostOfRevenue", "Cost of revenue"],
+    ["annualGrossProfit", "Gross profit"],
+    ["annualOperatingExpense", "Operating expenses"],
+    ["annualOperatingIncome", "Operating income"],
+    ["annualEBITDA", "EBITDA"],
+    ["annualPretaxIncome", "Pre-tax income"],
+    ["annualTaxProvision", "Income tax"],
+    ["annualNetIncome", "Net income"],
+    ["annualDilutedEPS", "Diluted EPS", true],
+  ],
+  balance: [
+    ["annualCashAndCashEquivalents", "Cash and equivalents"],
+    ["annualCurrentAssets", "Current assets"],
+    ["annualTotalAssets", "Total assets"],
+    ["annualCurrentLiabilities", "Current liabilities"],
+    ["annualTotalDebt", "Total debt"],
+    ["annualTotalLiabilitiesNetMinorityInterest", "Total liabilities"],
+    ["annualStockholdersEquity", "Shareholders' equity"],
+  ],
+  cashflow: [
+    ["annualOperatingCashFlow", "Operating cash flow"],
+    ["annualCapitalExpenditure", "Capital expenditure"],
+    ["annualFreeCashFlow", "Free cash flow"],
+    ["annualCashDividendsPaid", "Dividends paid"],
+    ["annualRepurchaseOfCapitalStock", "Share buybacks"],
+  ],
+};
+
+/** Up to the last four fiscal years of the income statement, balance sheet and cash flow. */
+export async function yahooStatements(symbol: string): Promise<Statements | null> {
+  const types = [...Object.values(STATEMENT_LINES).flat().map(([type]) => type), "quarterlyTotalRevenue"];
+  const now = Math.floor(Date.now() / 1000);
+  const data = await getJson<Timeseries>(
+    `/ws/fundamentals-timeseries/v1/finance/timeseries/${encodeURIComponent(symbol)}` +
+      `?type=${types.join(",")}&period1=${now - 6 * 365 * 86400}&period2=${now}`,
+  );
+  type Point = { asOfDate?: string; currencyCode?: string; reportedValue?: unknown } | null;
+  const series = new Map<string, Map<string, number>>();
+  let currency: string | null = null;
+  let lastQuarter: string | null = null;
+  for (const row of data.timeseries?.result ?? []) {
+    const name = row.meta?.type?.[0];
+    const points = (name ? row[name] : null) as Point[] | null;
+    if (!name || !Array.isArray(points)) continue;
+    const byDate = new Map<string, number>();
+    for (const point of points) {
+      const value = raw(point?.reportedValue);
+      if (!point?.asOfDate || value === null) continue;
+      byDate.set(point.asOfDate, value);
+      if (!currency && point.currencyCode) currency = point.currencyCode;
+      if (name === "quarterlyTotalRevenue" && (!lastQuarter || point.asOfDate > lastQuarter)) lastQuarter = point.asOfDate;
+    }
+    series.set(name, byDate);
+  }
+  const years = [...new Set([...(series.get("annualTotalRevenue")?.keys() ?? []), ...(series.get("annualTotalAssets")?.keys() ?? [])])].sort().slice(-4);
+  if (!years.length) return null;
+  const build = (lines: [string, string, boolean?][]) =>
+    lines
+      .map(([type, label, perShare]) => ({ label, perShare, values: years.map((year) => series.get(type)?.get(year) ?? null) }))
+      .filter((row) => row.values.some((value) => value !== null));
+  return {
+    currency,
+    years,
+    income: build(STATEMENT_LINES.income),
+    balance: build(STATEMENT_LINES.balance),
+    cashflow: build(STATEMENT_LINES.cashflow),
+    lastQuarter,
+  };
+}
+
+/* ------------------------------- next results date ------------------------------- */
+
+export type Earnings = { date: string; estimated: boolean } | null;
+
+/**
+ * The next results date. Nasdaq publishes confirmed or expected dates for US
+ * listings; otherwise it is estimated from the last quarter: companies usually
+ * report four to six weeks after a quarter ends.
+ */
+export async function nextEarnings(symbol: string, lastQuarter: string | null): Promise<Earnings> {
+  if (/^[A-Z]{1,5}$/.test(symbol)) {
+    try {
+      const response = await fetch(`https://api.nasdaq.com/api/analyst/${symbol}/earnings-date`, {
+        headers: { "User-Agent": UA, Accept: "application/json" },
+        signal: AbortSignal.timeout(ATTEMPT_MS),
+        cache: "no-store",
+      });
+      if (response.ok) {
+        const body = (await response.json()) as { data?: { reportText?: string } };
+        const match = body.data?.reportText?.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+        if (match) {
+          const date = `${match[3]}-${match[1]}-${match[2]}`;
+          if (date >= new Date().toISOString().slice(0, 10)) return { date, estimated: false };
+        }
+      }
+    } catch {
+      // Fall back to the estimate.
+    }
+  }
+  if (!lastQuarter) return null;
+  const end = new Date(`${lastQuarter}T12:00:00Z`);
+  const today = new Date();
+  // Step forward a quarter at a time until the estimated report lies ahead.
+  for (let i = 1; i <= 4; i++) {
+    const nextEnd = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 3 * i + 1, 0));
+    const report = new Date(nextEnd.getTime() + 35 * 86_400_000);
+    if (report > today) return { date: report.toISOString().slice(0, 10), estimated: true };
+  }
+  return null;
+}

@@ -322,6 +322,8 @@ async function run(label, viewport) {
   await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }), page.keyboard.press("Enter")]);
   page.url().includes("/markets/MSFT") ? ok("search opens the asset page") : note(`[${label}] search navigated to ${page.url()}`);
   await expectText("Does it fit you?", "fit panel");
+  await expectText("Comfortable for a", "fit scale shows the comfort zone");
+  await expectText("Financial statements", "share page has a statements panel");
   await page.waitForSelector("svg[role=img]");
   await shot("20-asset");
   await clickText("5 years", "button");

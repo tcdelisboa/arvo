@@ -94,7 +94,7 @@ function PlanPreview() {
 const STEPS = [
   {
     title: "See where your money goes",
-    body: "Connect your bank or upload a statement. Arvo sorts every transaction, shows your biggest costs, and points out where you could save without changing how you live.",
+    body: "Upload a statement from your bank. Arvo sorts every transaction, shows your biggest costs, and points out where you could save without changing how you live.",
     preview: <SpendingPreview />,
   },
   {

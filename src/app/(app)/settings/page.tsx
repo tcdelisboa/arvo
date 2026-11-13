@@ -93,7 +93,7 @@ export default async function SettingsPage() {
         </Panel>
 
         <Panel>
-          <PanelHeader title="Delete account" note="Removes your account, transactions, investor profile and bank connections. This cannot be undone." />
+          <PanelHeader title="Delete account" note="Removes your account, transactions and investor profile. This cannot be undone." />
           <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
             <DeleteForm />
           </div>
