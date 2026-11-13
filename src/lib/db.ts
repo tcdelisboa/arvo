@@ -123,6 +123,25 @@ CREATE TABLE IF NOT EXISTS plan_interest (
   user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE plan_interest ADD COLUMN IF NOT EXISTS price_cents INTEGER;
+ALTER TABLE plan_interest ADD COLUMN IF NOT EXISTS price_currency TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS lang TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS monthly_email BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS emergency_cents INTEGER;
+CREATE TABLE IF NOT EXISTS contributions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ym TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS contributions_user ON contributions (user_id, ym);
+CREATE TABLE IF NOT EXISTS monthly_emails (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ym TEXT NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, ym)
+);
 `;
 
 async function createDriver(): Promise<Driver> {

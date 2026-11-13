@@ -1,0 +1,25 @@
+# Sends each person the summary of the month that just ended.
+# Needs the repository secret CRON_SECRET, with the same value as CRON_SECRET on Render.
+# Until that secret exists the job does nothing.
+name: Monthly email
+
+on:
+  schedule:
+    - cron: "17 8 1 * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Ask Arvo to send the monthly emails
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then echo "CRON_SECRET is not set; skipping."; exit 0; fi
+          # Wake the free instance first; it can take a minute.
+          curl -fsS --retry 5 --retry-delay 20 --max-time 90 https://arvo-o9o5.onrender.com/api/health > /dev/null
+          curl -fsS --max-time 600 -X POST -H "Authorization: Bearer $CRON_SECRET" https://arvo-o9o5.onrender.com/api/cron/monthly

@@ -4,8 +4,8 @@ import { msg } from "@/lib/i18n/core";
 import { Check } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { q1 } from "@/lib/db";
-import { joinWaitlist } from "@/lib/actions/plan";
-import { FREE_FEATURES, FREE_HISTORY_MONTHS, PLUS_FEATURES, PLUS_PRICE } from "@/lib/plan";
+import { joinWaitlist, setPlusPrice } from "@/lib/actions/plan";
+import { FREE_FEATURES, FREE_HISTORY_MONTHS, PLUS_FEATURES, PLUS_PRICE, priceOptions } from "@/lib/plan";
 import { Badge, cx, Notice, PageHeader, Panel } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -30,7 +30,9 @@ export default async function PlusPage() {
   const user = await requireUser();
   const plus = user.plan === "plus";
   const { t, f } = await getI18n();
-  const waiting = plus ? null : await q1("SELECT 1 AS yes FROM plan_interest WHERE user_id = $1", [user.id]);
+  const waiting = plus ? null : await q1<{ price_cents: number | null }>("SELECT price_cents FROM plan_interest WHERE user_id = $1", [user.id]);
+  const answered = waiting?.price_cents ?? null;
+  const priceText = (cents: number) => (cents === 0 ? t("I would not pay for it") : t("{amount} a month", { amount: f.money(cents, user.currency) }));
 
   return (
     <>
@@ -52,10 +54,14 @@ export default async function PlusPage() {
             <h2 className="text-[17px] font-semibold text-ink">Plus</h2>
             {plus ? <Badge tone="brand">{t("Your plan")}</Badge> : null}
           </div>
-          <p className="figure mt-3 text-[40px] leading-none text-ink">
-            {PLUS_PRICE}
-            <span className="font-sans text-[15px] font-normal text-ink-3"> {t("a month")}</span>
-          </p>
+          {user.currency === "EUR" ? (
+            <p className="figure mt-3 text-[40px] leading-none text-ink">
+              {PLUS_PRICE}
+              <span className="font-sans text-[15px] font-normal text-ink-3"> {t("a month")}</span>
+            </p>
+          ) : (
+            <p className="mt-3 text-[15px] text-ink-2">{t("Price in your currency to be decided. Your answer below helps set it.")}</p>
+          )}
           <p className="mt-1.5 text-[13.5px] text-ink-3">{t("Cancel whenever you want")}</p>
           <Features items={PLUS_FEATURES} strong t={t} />
 
@@ -63,9 +69,32 @@ export default async function PlusPage() {
             {plus ? (
               <Notice tone="accent">{t("You have Plus. Everything on this list is switched on.")}</Notice>
             ) : waiting ? (
-              <Notice tone="accent" title={t("You are on the list.")}>
-                {t("We will email {email} when Plus opens.", { email: user.email })}
-              </Notice>
+              <div className="space-y-4">
+                <Notice tone="accent" title={t("You are on the list.")}>
+                  {t("We will email {email} when Plus opens.", { email: user.email })}
+                </Notice>
+                <form action={setPlusPrice}>
+                  <p className="text-[14.5px] font-medium text-ink">{t("One honest question: what would you pay for Plus each month?")}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {priceOptions(user.currency).map((cents) => (
+                      <button
+                        key={cents}
+                        type="submit"
+                        name="price"
+                        value={cents}
+                        aria-pressed={answered === cents}
+                        className={cx(
+                          "h-10 rounded-full border px-4 text-[14px] font-medium transition-colors",
+                          answered === cents ? "border-brand bg-brand text-on-brand" : "border-line-strong bg-raised text-ink hover:border-brand hover:bg-brand-soft",
+                        )}
+                      >
+                        {priceText(cents)}
+                      </button>
+                    ))}
+                  </div>
+                  {answered !== null ? <p className="mt-2 text-[13px] text-ink-3">{t("Thank you. You can change your answer at any time.")}</p> : null}
+                </form>
+              </div>
             ) : (
               <>
                 <form action={joinWaitlist}>

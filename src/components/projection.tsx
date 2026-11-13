@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useI18n } from "./i18n";
+import { msg } from "@/lib/i18n/core";
 import { project } from "@/lib/portfolio";
 import { ProjectionChart } from "./charts";
 
@@ -12,12 +13,15 @@ export function Projection({
   volatility,
   currency,
   defaultYears,
+  real = false,
 }: {
   monthlyCents: number;
   expectedReturn: number;
   volatility: number;
   currency: string;
   defaultYears: number;
+  /** Returns are after inflation (savings in reais). */
+  real?: boolean;
 }) {
   const [years, setYears] = useState(defaultYears);
   const data = useMemo(() => project(monthlyCents, { expectedReturn, volatility }, years), [monthlyCents, expectedReturn, volatility, years]);
@@ -63,7 +67,9 @@ export function Projection({
       </div>
 
       <p className="mt-5 max-w-[70ch] text-[12.5px] leading-relaxed text-ink-3">
-        {t("This is an illustration, not a forecast. It assumes {amount} invested every month and a long-run return of {rate} a year before inflation, fees and tax, with year-to-year swings of about {swing}. About two outcomes in three would fall inside the shaded range; one in three would fall outside it. Real markets can do better or worse than any model.", {
+        {t(real
+          ? msg("This is an illustration, not a forecast. It assumes {amount} invested every month and a long-run return of {rate} a year above inflation, before fees and tax, with year-to-year swings of about {swing}. Values are in today's money. About two outcomes in three would fall inside the shaded range; one in three would fall outside it. Real markets can do better or worse than any model.")
+          : msg("This is an illustration, not a forecast. It assumes {amount} invested every month and a long-run return of {rate} a year before inflation, fees and tax, with year-to-year swings of about {swing}. About two outcomes in three would fall inside the shaded range; one in three would fall outside it. Real markets can do better or worse than any model."), {
           amount: fmt(monthlyCents),
           rate: f.percent(expectedReturn * 100),
           swing: f.percent(volatility * 100, 0),

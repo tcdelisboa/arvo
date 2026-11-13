@@ -36,6 +36,14 @@ async function run(label, viewport) {
     if (overflow > 1) note(`[${label}] ${name}: horizontal overflow of ${overflow}px`);
   };
   const go = async (url) => { await page.goto(BASE + url, { waitUntil: "networkidle0" }); };
+  // With accounts already imported, the form adds to the first one unless told to start a new account.
+  const newAccount = async (name) => {
+    if (await page.$("select#account")) {
+      await page.select("select#account", "");
+      await page.waitForSelector("#name", { visible: true });
+    }
+    await page.type("#name", name);
+  };
   const clickText = async (text, selector = "button, a") => {
     const handle = await page.evaluateHandle((t, sel) => [...document.querySelectorAll(sel)].find((el) => el.textContent.trim().includes(t) && el.offsetParent !== null), text, selector);
     const el = handle.asElement();
@@ -80,7 +88,7 @@ async function run(label, viewport) {
   await page.waitForSelector("[role=alert]");
   await expectText("Enter your name", "sign-up shows field errors");
   await shot("03-signup-errors");
-  await page.type("#name", "Thor Tester");
+  await newAccount("Thor Tester");
   await page.type("#email", email);
   await page.type("#password", password);
   await page.click("input[name=terms]");
@@ -121,14 +129,14 @@ async function run(label, viewport) {
   await writeFile(file, csv);
   const input = await page.$("input[type=file]");
   await input.uploadFile(file);
-  await page.type("#name", "My bank");
+  await newAccount("My bank");
   await shot("07a-accounts-before-import");
   await clickText("Import statement", "button");
   await page.waitForFunction(() => document.body.innerText.includes("Imported 3 transactions"), { timeout: 15000 }).then(() => ok("CSV import of 3 rows"), () => note(`[${label}] CSV import message missing`));
   // Importing the same file again must not duplicate.
   const input2 = await page.$("input[type=file]");
   await input2.uploadFile(file);
-  await page.type("#name", "My bank");
+  await newAccount("My bank");
   await clickText("Import statement", "button");
   await page.waitForFunction(() => document.body.innerText.includes("Imported 0 transactions"), { timeout: 15000 }).then(() => ok("re-import creates no duplicates"), () => note(`[${label}] duplicate protection failed`));
   // PDF import: a statement printed to PDF, with debit and credit columns and a wrapped description.
@@ -145,7 +153,7 @@ async function run(label, viewport) {
   await printer.close();
   const input3 = await page.$("input[type=file]");
   await input3.uploadFile(pdfFile);
-  await page.type("#name", "PDF bank");
+  await newAccount("PDF bank");
   await clickText("Import statement", "button");
   await page.waitForFunction(() => document.body.innerText.includes("Imported 3 transactions into PDF bank"), { timeout: 20000 }).then(() => ok("PDF import of 3 rows"), async () => note(`[${label}] PDF import message missing: ${(await page.evaluate(() => document.querySelector("form [role=alert], form [role=status]")?.innerText ?? "")).slice(0, 160)}`));
   await go("/spending?q=bakery");
@@ -170,12 +178,21 @@ async function run(label, viewport) {
   await writeFile(csvTwo, "Date,Description,Amount\n2026-09-11,FLOWER SHOP,-7.50\n");
   const input4 = await page.$("input[type=file]");
   await input4.uploadFile(pdfTwo, csvTwo);
-  await page.type("#name", "Two files");
+  await newAccount("Two files");
   await clickText("Import statement", "button");
   await page.waitForFunction(() => document.body.innerText.includes("Imported 3 transactions from 2 files into Two files"), { timeout: 20000 }).then(() => ok("several statements import together"), async () => note(`[${label}] multi-file import message missing: ${(await page.evaluate(() => document.querySelector("form")?.innerText ?? "")).slice(0, 200)}`));
   await go("/spending?q=cafe norte");
   const cafe = await page.evaluate(() => document.body.innerText);
   /4[.,]00/.test(cafe) && !/96[.,]00/.test(cafe) ? ok("PDF import takes the amount, not the running balance") : note(`[${label}] PDF amount looks wrong for CAFE NORTE`);
+  // OFX, the export most Brazilian banks offer, added to an account imported before.
+  await go("/accounts");
+  const ofxFile = path.join(OUT, `statement-${label}.ofx`);
+  await writeFile(ofxFile, "OFXHEADER:100\nDATA:OFXSGML\n<OFX><BANKTRANLIST>\n<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260920<TRNAMT>-23,45<FITID>9<MEMO>PADARIA BOA VISTA</STMTTRN>\n</BANKTRANLIST></OFX>\n");
+  const firstAccount = await page.$eval("select#account option", (el) => el.textContent);
+  await (await page.$("input[type=file]")).uploadFile(ofxFile);
+  await clickText("Import statement", "button");
+  await page.waitForFunction((n) => document.body.innerText.includes(`Imported 1 transaction into ${n}`), { timeout: 20000 }, firstAccount)
+    .then(() => ok("OFX import into an existing account"), async () => note(`[${label}] OFX import message missing: ${(await page.evaluate(() => document.querySelector("form")?.innerText ?? "")).slice(0, 200)}`));
   await go("/accounts");
   await shot("07-accounts");
 
@@ -233,6 +250,8 @@ async function run(label, viewport) {
   await shot("11a-plus");
   await clickText("Join the Plus waitlist", "button");
   await expectText("You are on the list", "waitlist confirmed");
+  await clickText("€4.99 a month", "button");
+  await expectText("You can change your answer", "plus asks what people would pay");
   await shot("11b-plus-waiting", false);
 
   // Admin: only for the listed accounts
@@ -242,6 +261,11 @@ async function run(label, viewport) {
     await expectText(`waiting-${label}@example.com`, "admin lists the public waitlist");
     await expectText("What people want Arvo for", "admin shows what people came for");
     await expectText("Live market data", "admin shows the market data status");
+    await expectText("Funnel", "admin shows the funnel");
+    await expectText("By week of sign-up", "admin shows weekly cohorts");
+    await expectText("€4.99 a month", "admin shows what people would pay");
+    const preview = await page.evaluate(async () => { const r = await fetch("/api/admin/monthly-preview"); return { code: r.status, text: await r.text() }; });
+    preview.code === 200 && /Subject: Your .* with Arvo/.test(preview.text) ? ok("monthly email preview") : note(`[${label}] monthly email preview: ${preview.code} ${preview.text.slice(0, 120)}`);
     const csvFile = await page.evaluate(async () => { const r = await fetch("/api/admin/waitlist"); return { code: r.status, text: await r.text() }; });
     csvFile.code === 200 && csvFile.text.includes(`waiting-${label}@example.com`) ? ok("waitlist downloads as CSV") : note(`[${label}] waitlist CSV: ${csvFile.code}`);
     await expectText("Own statement", "admin shows who imported a statement");
@@ -307,6 +331,33 @@ async function run(label, viewport) {
   await clickText("Add individual companies", "button");
   await page.waitForFunction(() => document.body.innerText.includes("Microsoft"), { timeout: 15000 }).then(() => ok("companies sleeve toggles on"), () => note(`[${label}] companies toggle failed`));
   await shot("16-portfolio-companies", false);
+
+  // The monthly habit: log what was invested, and the emergency fund.
+  await page.type("#contribution", "250");
+  await clickText("Log it", "button");
+  await expectText("1 month so far", "logging an investment starts the streak");
+  await expectText("Undo the last entry", "a logged entry can be undone");
+  await page.type("#saved", "3000");
+  await clickText("Update", "button");
+  await page.waitForFunction(() => /to go\.|Done\./.test(document.body.innerText), { timeout: 10000 }).then(() => ok("emergency fund progress"), () => note(`[${label}] emergency fund did not update`));
+  await shot("16a-portfolio-habit", false);
+  const cron = await page.evaluate(async () => (await fetch("/api/cron/monthly", { method: "POST" })).status);
+  cron === 401 || cron === 503 ? ok("monthly email endpoint refuses unsigned calls") : note(`[${label}] cron endpoint status: ${cron}`);
+
+  // Saving in reais switches the plan to funds listed on B3.
+  await go("/settings");
+  await page.select("#currency", "BRL");
+  await Promise.all([page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 }).catch(() => {}), page.$eval("#currency", (el) => el.form.requestSubmit())]);
+  await new Promise((r) => setTimeout(r, 800));
+  await go("/portfolio");
+  await expectText("WRLD11", "BRL plan uses B3 funds");
+  await expectText("above inflation", "BRL projection is after inflation");
+  await shot("16b-portfolio-brl", false);
+  await go("/settings");
+  await page.select("#currency", "EUR");
+  await Promise.all([page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 }).catch(() => {}), page.$eval("#currency", (el) => el.form.requestSubmit())]);
+  await new Promise((r) => setTimeout(r, 800));
+  await go("/portfolio");
   await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
   await shot("17-portfolio-dark", false);
   await page.evaluate(() => { document.documentElement.dataset.theme = "light"; });

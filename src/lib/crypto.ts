@@ -3,6 +3,7 @@ import {
   createCipheriv,
   createDecipheriv,
   createHash,
+  createHmac,
   randomBytes,
   scrypt as scryptCb,
   timingSafeEqual,
@@ -51,6 +52,26 @@ function secretKey(): Buffer {
     return createHash("sha256").update("arvo-development-only-secret").digest();
   }
   return createHash("sha256").update(secret).digest();
+}
+
+/**
+ * Key for signed links. Prefers APP_SECRET; falls back to other server-only
+ * secrets so a missing APP_SECRET never breaks an email link.
+ */
+function signingKey(): Buffer {
+  const secret = [process.env.APP_SECRET, process.env.CRON_SECRET, process.env.DATABASE_URL].find((s) => s && s.length >= 24);
+  return createHash("sha256").update(`arvo-links:${secret ?? "arvo-development-only-secret"}`).digest();
+}
+
+/** A short signature for links that must not be guessable (unsubscribe). */
+export function sign(value: string): string {
+  return createHmac("sha256", signingKey()).update(value).digest("base64url").slice(0, 32);
+}
+
+export function verifySignature(value: string, signature: string): boolean {
+  const expected = Buffer.from(sign(value));
+  const given = Buffer.from(signature);
+  return expected.length === given.length && timingSafeEqual(expected, given);
 }
 
 /** AES-256-GCM. Used for bank access tokens at rest. */

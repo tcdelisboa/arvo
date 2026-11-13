@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "../auth";
-import { q } from "../db";
+import { q, q1 } from "../db";
 import { isCategory } from "../categories";
 import { parseStatement, type ParsedRow } from "../csv";
+import { isOfx, parseOfx } from "../ofx";
 import { createAccount, insertTransactions } from "../data";
 import { generateDemoRows, seedFrom } from "../demo";
 import { isCurrency } from "../format";
@@ -79,21 +80,26 @@ export async function importStatement(_prev: ImportState, formData: FormData): P
       failed.push(label + t("That file is larger than 5 MB. Export a shorter period and try again."));
       continue;
     }
-    if (/\.(xlsx?|ods|numbers)$/i.test(file.name)) {
-      failed.push(label + t("That looks like a spreadsheet. In your bank's website, choose CSV or PDF as the export format."));
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const magic = buffer.subarray(0, 8).toString("hex");
+    const isPdf = buffer.subarray(0, 5).toString("latin1") === "%PDF-";
+    const isXlsx = magic.startsWith("504b0304") && /\.xlsx$/i.test(file.name);
+    if (magic.startsWith("d0cf11e0") || /\.(ods|numbers)$/i.test(file.name)) {
+      failed.push(label + t("This is an older spreadsheet format. Save it as .xlsx or CSV, or download the statement again as CSV, OFX or PDF."));
       continue;
     }
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const isPdf = buffer.subarray(0, 5).toString("latin1") === "%PDF-";
     let parsed;
     if (isPdf) {
       const { readPdfStatement } = await import("../pdf-read");
       parsed = await readPdfStatement(new Uint8Array(buffer));
+    } else if (isXlsx) {
+      const { readXlsxStatement } = await import("../xlsx-read");
+      parsed = await readXlsxStatement(buffer);
     } else {
       // Most banks export UTF-8; some still use Windows-1252. Fall back if decoding left replacement characters.
       let text = new TextDecoder("utf-8").decode(buffer);
       if (text.includes("\ufffd")) text = new TextDecoder("windows-1252").decode(buffer);
-      parsed = parseStatement(text);
+      parsed = isOfx(text) ? parseOfx(text) : parseStatement(text);
     }
     if (parsed.error) {
       failed.push(label + t(parsed.error));
@@ -108,15 +114,22 @@ export async function importStatement(_prev: ImportState, formData: FormData): P
   const problems = failed.join(" ");
   if (!read) return { error: problems };
 
+  // Either add to an account imported before, or start a new one.
+  const target = String(formData.get("account") ?? "");
+  const existing = target
+    ? await q1<{ id: string; name: string }>("SELECT id, name FROM accounts WHERE id = $1 AND user_id = $2 AND source = 'csv'", [target, user.id])
+    : null;
   const rawName = String(formData.get("name") ?? "").trim();
   const fallback = files.length === 1 ? files[0].name.replace(/\.[^.]+$/, "") : t("Imported statements");
-  const name = (rawName || fallback || t("Imported account")).slice(0, 60);
-  const accountId = await createAccount(user.id, {
-    name,
-    institution: "Statement import",
-    source: "csv",
-    externalId: `csv:${name.toLowerCase()}`,
-  });
+  const name = existing?.name ?? (rawName || fallback || t("Imported account")).slice(0, 60);
+  const accountId =
+    existing?.id ??
+    (await createAccount(user.id, {
+      name,
+      institution: "Statement import",
+      source: "csv",
+      externalId: `csv:${name.toLowerCase()}`,
+    }));
   const inserted = await insertTransactions(user.id, accountId, rows, "csv");
   await markOnboarded(user.id);
   refresh();

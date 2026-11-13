@@ -3,7 +3,7 @@ import { msg } from "@/lib/i18n/core";
 import { requireAdmin } from "@/lib/auth";
 import { q, q1 } from "@/lib/db";
 import { setUserPlan } from "@/lib/actions/plan";
-import { day } from "@/lib/format";
+import { day, money } from "@/lib/format";
 import { goalLabel, GOALS } from "@/lib/goals";
 import { marketStatus } from "@/lib/market";
 import { PROFILES, type Level } from "@/lib/risk";
@@ -74,6 +74,41 @@ export default async function AdminPage() {
       ),
       marketStatus().catch(() => null),
     ]);
+
+  // The funnel: each step counts people who also reached it, out of everyone who signed up.
+  const [started, logged, cohorts, prices] = await Promise.all([
+    count(
+      `SELECT count(*)::int AS n FROM users u
+        WHERE EXISTS (SELECT 1 FROM accounts a WHERE a.user_id = u.id)
+           OR EXISTS (SELECT 1 FROM investor_profiles p WHERE p.user_id = u.id)`,
+    ),
+    count("SELECT count(DISTINCT user_id)::int AS n FROM contributions"),
+    q<{ week: string; signups: number; imported: number; profiled: number; logged: number; back: number }>(
+      `SELECT to_char(date_trunc('week', u.created_at), 'YYYY-MM-DD') AS week,
+              count(*)::int AS signups,
+              count(*) FILTER (WHERE EXISTS (SELECT 1 FROM accounts a WHERE a.user_id = u.id AND a.source IN ('csv', 'bank')))::int AS imported,
+              count(*) FILTER (WHERE EXISTS (SELECT 1 FROM investor_profiles p WHERE p.user_id = u.id))::int AS profiled,
+              count(*) FILTER (WHERE EXISTS (SELECT 1 FROM contributions c WHERE c.user_id = u.id))::int AS logged,
+              count(*) FILTER (WHERE EXISTS (SELECT 1 FROM activity a WHERE a.user_id = u.id AND a.day::date >= u.created_at::date + 7))::int AS back
+         FROM users u
+        WHERE u.created_at > now() - interval '10 weeks'
+        GROUP BY 1 ORDER BY 1 DESC`,
+    ),
+    q<{ price_cents: number; price_currency: string; n: number }>(
+      `SELECT price_cents, price_currency, count(*)::int AS n FROM plan_interest
+        WHERE price_cents IS NOT NULL GROUP BY 1, 2 ORDER BY 2, 1`,
+    ),
+  ]);
+  const funnel: [string, number, string][] = [
+    ["Signed up", total, "Everyone with an account"],
+    ["Got started", started, "Imported something, loaded the sample or answered the investor questions"],
+    ["Imported their own statement", imported, "A real CSV, OFX, Excel or PDF statement"],
+    ["Finished the investor profile", profiled, "All ten questions"],
+    ["Logged an investment", logged, "Used the monthly tracker at least once"],
+    ["Came back a week later", backAfterWeek, "Used Arvo 7 or more days after signing up"],
+  ];
+  const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)}%` : "–");
+  const priceCurrencies = [...new Set(prices.map((p) => p.price_currency))];
   const answered = goals.reduce((sum, row) => sum + row.n, 0);
   const failing = market?.checks.filter((check) => !check.ok) ?? [];
 
@@ -94,6 +129,98 @@ export default async function AdminPage() {
           <Stat label="Back a week or more after signing up" value={backAfterWeek} note={weekOld > 0 ? `${share(backAfterWeek, weekOld)} old enough` : "No account is a week old yet"} />
         </div>
       </Panel>
+
+      <Panel className="mt-5">
+        <PanelHeader title="Funnel" note="How far people get. The second figure is the share of the step before; a big drop shows where to work next." />
+        <ol className="space-y-4 px-5 pb-6 pt-4 sm:px-6">
+          {funnel.map(([label, n, hint], index) => (
+            <li key={label}>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 text-[14px]">
+                <span className="font-medium text-ink">{label}</span>
+                <span className="tnum text-ink-2">
+                  <span className="font-semibold text-ink">{n}</span>
+                  <span className="ml-3">{pct(n, total)} of sign-ups</span>
+                  {index > 0 ? <span className="ml-3 text-ink-3">{pct(n, funnel[index - 1][1])} of previous</span> : null}
+                </span>
+              </div>
+              <div className="mt-1.5 h-2 rounded-full bg-sunken">
+                <div className="h-full rounded-full bg-brand" style={{ width: total ? `${(n / total) * 100}%` : "0%" }} />
+              </div>
+              <p className="mt-1 text-[12.5px] text-ink-3">{hint}</p>
+            </li>
+          ))}
+        </ol>
+      </Panel>
+
+      <Panel className="mt-5">
+        <PanelHeader title="By week of sign-up" note="Each row follows the people who joined that week. Recent weeks have not had time to come back yet." />
+        {cohorts.length ? (
+          <div className="overflow-x-auto px-2 pb-4 pt-3 sm:px-3">
+            <table className="w-full min-w-[560px] border-collapse text-left text-[13.5px]">
+              <thead>
+                <tr className="text-[12.5px] text-ink-3">
+                  {["Week of", "Signed up", "Imported", "Profile", "Logged an investment", "Back after a week"].map((h, i) => (
+                    <th key={h} scope="col" className={i ? "px-3 py-2 text-right font-medium" : "px-3 py-2 font-medium"}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {cohorts.map((c) => (
+                  <tr key={c.week} className="border-t border-line">
+                    <td className="whitespace-nowrap px-3 py-2.5 text-ink">{day(c.week)}</td>
+                    <td className="tnum px-3 py-2.5 text-right font-medium text-ink">{c.signups}</td>
+                    {[c.imported, c.profiled, c.logged, c.back].map((n, i) => (
+                      <td key={i} className="tnum px-3 py-2.5 text-right text-ink-2">{pct(n, c.signups)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="px-5 pb-6 pt-3 text-[14.5px] text-ink-2 sm:px-6">No sign-ups in the last ten weeks.</p>
+        )}
+      </Panel>
+
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
+        <Panel>
+          <PanelHeader
+            title="What people would pay for Plus"
+            note={prices.length ? "Asked after someone joins the Plus waitlist" : "Nobody has answered yet. The question appears after joining the Plus waitlist."}
+          />
+          {priceCurrencies.map((currency) => {
+            const rows = prices.filter((p) => p.price_currency === currency);
+            const n = rows.reduce((sum, row) => sum + row.n, 0);
+            return (
+              <div key={currency} className="px-5 pb-5 pt-3 sm:px-6">
+                <p className="mb-2 text-[13px] font-medium text-ink-3">{currency}, {n} {n === 1 ? "answer" : "answers"}</p>
+                <ul className="space-y-2.5">
+                  {rows.map((row) => (
+                    <li key={row.price_cents}>
+                      <div className="flex justify-between gap-3 text-[14px]">
+                        <span className="text-ink">{row.price_cents === 0 ? "Would not pay" : `${money(row.price_cents, currency)} a month`}</span>
+                        <span className="tnum text-ink-2">{row.n}</span>
+                      </div>
+                      <div className="mt-1 h-1.5 rounded-full bg-sunken">
+                        <div className="h-full rounded-full bg-brand" style={{ width: `${(row.n / n) * 100}%` }} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+          {!prices.length ? <div className="pb-2" /> : null}
+        </Panel>
+
+        <Panel>
+          <PanelHeader title="Monthly email" note="Sent on the 1st of each month by the scheduled GitHub workflow" />
+          <div className="px-5 pb-5 pt-3 text-[14px] text-ink-2 sm:px-6">
+            <p>{process.env.CRON_SECRET ? "Scheduling is set up on this server." : "Not switched on yet: CRON_SECRET is missing on this server and in GitHub."}</p>
+            <a href="/api/admin/monthly-preview" target="_blank" className={`${buttonClass("secondary", "sm")} mt-3`}>Preview my monthly email</a>
+          </div>
+        </Panel>
+      </div>
 
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
         <Panel>

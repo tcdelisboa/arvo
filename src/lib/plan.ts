@@ -36,3 +36,8 @@ export const PLUS_FEATURES = [
   msg("Export to Excel"),
   msg("Everything in Free"),
 ];
+
+/** Monthly prices offered in the "what would you pay" question, in cents. 0 means "I would not pay". */
+export function priceOptions(currency: string): number[] {
+  return currency === "BRL" ? [0, 990, 1490, 1990, 2990] : [0, 299, 499, 799, 999];
+}

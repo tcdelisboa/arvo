@@ -107,13 +107,13 @@ export default async function AccountsPage() {
         ) : null}
 
         <Panel>
-          <PanelHeader title={t("Import a statement")} note={t("A CSV or PDF statement from your bank's website or app.")} />
+          <PanelHeader title={t("Import a statement")} note={t("A CSV, OFX, Excel or PDF statement from your bank's website or app.")} />
           <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
-            <ImportForm />
+            <ImportForm accounts={accounts.filter((a) => a.source === "csv").map((a) => ({ id: a.id, name: a.name }))} />
             <details className="mt-5 text-[13.5px] text-ink-2">
               <summary className="cursor-pointer font-medium text-ink">{t("How do I get a statement from my bank?")}</summary>
               <p className="mt-2">
-                {t("Sign in to your bank on a computer, open the list of transactions for your current account, choose the longest period on offer (six months or more works best), and look for Export or Download. CSV is the most reliable; a PDF statement works too, as long as it is the bank's own file and not a scan or a photo. Arvo works out the columns, dates and decimals on its own, and importing the same file twice never creates duplicates.")}
+                {t("Open your bank's app or website, go to the statement for your current account, choose the longest period on offer (six months or more works best) and look for Export, Download or Share. CSV and OFX (sometimes called Money or Quicken) are the most reliable; Excel works too, and so does a PDF statement, as long as it is the bank's own file and not a scan or a photo. Arvo works out the columns, dates and decimals on its own, and importing the same file twice never creates duplicates.")}
               </p>
             </details>
           </div>

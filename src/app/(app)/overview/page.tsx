@@ -9,13 +9,14 @@ import { todayIso } from "@/lib/format";
 import { categoryTotals, monthlyAverages, summarizeMonths, ymOf } from "@/lib/spending";
 import { FREE_HISTORY_MONTHS } from "@/lib/plan";
 import { buildInsights, totalPotentialSaving } from "@/lib/insights";
-import { buildPortfolio, portfolioStats } from "@/lib/portfolio";
+import { buildPortfolio, portfolioStats, regionFor } from "@/lib/portfolio";
 import { PROFILES } from "@/lib/risk";
 import { ButtonLink, Notice, PageHeader, Panel, PanelHeader, Stat } from "@/components/ui";
 import { MonthColumns } from "@/components/charts";
 import { CategoryBars } from "@/components/category-bars";
 import { PlanBar } from "@/components/plan-bar";
 import { SubmitButton } from "@/components/submit-button";
+import { MonthlyPanel } from "@/components/monthly-panel";
 
 export const generateMetadata = titled(msg("Overview"));
 
@@ -74,10 +75,22 @@ export default async function OverviewPage() {
               </form>
             </div>
             <p className="mt-5 flex items-center gap-2 text-[13.5px] text-ink-3">
-              <FileSpreadsheet size={15} /> {t("A CSV or PDF statement from any bank works.")}
+              <FileSpreadsheet size={15} /> {t("A CSV, OFX, Excel or PDF statement from any bank works.")}
             </p>
           </Panel>
         </div>
+        {profile ? (
+          <div className="mt-5">
+            <MonthlyPanel
+              userId={user.id}
+              currency={user.currency}
+              plannedCents={profile.monthlyCents}
+              spendingCents={null}
+              incomeCents={profile.answers.monthlyIncome}
+              stability={profile.answers.stability}
+            />
+          </div>
+        ) : null}
       </>
     );
   }
@@ -98,8 +111,9 @@ export default async function OverviewPage() {
   const period =
     averages.months.length === 1 ? f.month(averages.months[0], "long") : t("the last {n} full months", { n: averages.months.length });
 
-  const holdings = profile ? buildPortfolio(profile.level, profile.monthlyCents, profile.includeCompanies) : null;
-  const stats = holdings ? portfolioStats(holdings) : null;
+  const region = regionFor(user.currency);
+  const holdings = profile ? buildPortfolio(profile.level, profile.monthlyCents, profile.includeCompanies, region) : null;
+  const stats = holdings ? portfolioStats(holdings, region) : null;
 
   return (
     <>
@@ -133,6 +147,17 @@ export default async function OverviewPage() {
           />
         </div>
       </Panel>
+
+      <div className="mt-5">
+        <MonthlyPanel
+          userId={user.id}
+          currency={user.currency}
+          plannedCents={profile?.monthlyCents ?? null}
+          spendingCents={averages.spending > 0 ? averages.spending : null}
+          incomeCents={profile?.answers.monthlyIncome ?? (averages.income > 0 ? averages.income : null)}
+          stability={profile?.answers.stability ?? null}
+        />
+      </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_1fr]">
         <Panel>

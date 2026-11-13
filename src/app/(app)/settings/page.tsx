@@ -11,12 +11,15 @@ import { DeleteForm, NameForm, PasswordForm } from "@/components/settings-forms"
 import { SubmitButton } from "@/components/submit-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LangSwitch } from "@/components/lang-switch";
+import { setMonthlyEmail } from "@/lib/actions/tracking";
+import { getTracking } from "@/lib/tracking";
 
 export const generateMetadata = titled(msg("Settings"));
 
 export default async function SettingsPage() {
   const user = await requireUser();
   const { t } = await getI18n();
+  const { monthlyEmail } = await getTracking(user.id);
   return (
     <>
       <PageHeader title={t("Settings")} />
@@ -43,6 +46,20 @@ export default async function SettingsPage() {
               <SubmitButton variant="secondary" pendingLabel={t("Saving")}>{t("Save")}</SubmitButton>
             </form>
             <p className="-mt-2 text-[13px] text-ink-3">{t("Amounts are shown in this currency. Changing it does not convert existing transactions.")}</p>
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4">
+              <div className="max-w-md">
+                <p className="text-[13.5px] font-medium text-ink">{t("Monthly email")}</p>
+                <p className="text-[13px] text-ink-3">
+                  {monthlyEmail
+                    ? t("On. At the start of each month: what came in, what went out, what you invested and how your emergency fund is doing.")
+                    : t("Off. Switch it on to get a short summary of your month at the start of the next one.")}
+                </p>
+              </div>
+              <form action={setMonthlyEmail}>
+                <input type="hidden" name="on" value={monthlyEmail ? "no" : "yes"} />
+                <SubmitButton variant="secondary" size="sm" pendingLabel={t("Saving")}>{monthlyEmail ? t("Switch off") : t("Switch on")}</SubmitButton>
+              </form>
+            </div>
             <div className="flex items-center justify-between gap-4 border-t border-line pt-4">
               <div>
                 <p className="text-[13.5px] font-medium text-ink">{t("Language")}</p>

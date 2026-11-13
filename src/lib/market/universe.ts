@@ -99,6 +99,10 @@ export const UNIVERSE: UniverseEntry[] = [
   // Brazil (B3, priced in reais)
   etf("BOVA11.SA", "iShares Ibovespa Fundo de Índice", "Brazilian stocks", "Brazil", 4, "The Ibovespa index: the largest companies listed on B3 in São Paulo.", { group: "Brazil" }),
   etf("IVVB11.SA", "iShares S&P 500 Fundo de Índice", "US stocks", "United States", 3, "The S&P 500 bought in reais on B3, so it also moves with the dollar.", { group: "Brazil" }),
+  etf("WRLD11.SA", "Investo FTSE Global Equities ETF", "Global stocks", "World", 3, "Thousands of companies around the world in one fund, bought in reais on B3.", { group: "Brazil" }),
+  etf("LFTS11.SA", "Investo Teva Tesouro Selic ETF", "Cash-like", "Brazil", 1, "Holds Tesouro Selic, which earns roughly the Selic rate.", { group: "Brazil", assetClass: "cash" }),
+  etf("B5P211.SA", "It Now IMA-B5 P2 Fundo de Índice", "Inflation-linked bonds", "Brazil", 2, "Tesouro IPCA+ bonds maturing within about five years: inflation plus a fixed rate.", { group: "Brazil", assetClass: "bonds" }),
+  etf("GOLD11.SA", "Trend ETF LBMA Ouro", "Gold", "World", 3, "Follows the international gold price, converted into reais.", { group: "Brazil", assetClass: "gold", broad: false }),
   etf("SMAL11.SA", "iShares BM&FBOVESPA Small Cap Fundo de Índice", "Smaller companies", "Brazil", 5, "Smaller companies listed on B3.", { group: "Brazil" }),
   stock("PETR4.SA", "Petrobras", "Brazil", "Energy", "Brazil", 4, "Brazil's state-controlled oil and gas producer."),
   stock("VALE3.SA", "Vale", "Brazil", "Mining", "Brazil", 4, "One of the world's largest iron ore miners."),

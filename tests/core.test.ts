@@ -360,3 +360,55 @@ describe("plans", () => {
     expect(isPlan("gold")).toBe(false);
   });
 });
+
+describe("monthly habit and Brazilian plan", async () => {
+  const { streak, lastMonths, emergencyTarget } = await import("@/lib/progress");
+  const { buildPortfolio, portfolioStats } = await import("@/lib/portfolio");
+  const { parseOfx, isOfx } = await import("@/lib/ofx");
+
+  it("counts months in a row", () => {
+    const totals = [
+      { ym: "2026-08", cents: 10000 },
+      { ym: "2026-09", cents: 10000 },
+      { ym: "2026-10", cents: 5000 },
+    ];
+    expect(streak(totals, "2026-11")).toBe(3);
+    expect(streak([...totals, { ym: "2026-11", cents: 100 }], "2026-11")).toBe(4);
+    expect(streak([{ ym: "2026-09", cents: 100 }], "2026-11")).toBe(0);
+    expect(lastMonths(totals, "2026-11", 3).map((m) => m.cents)).toEqual([10000, 5000, 0]);
+  });
+
+  it("sets an emergency goal from spending, or income as a fallback", () => {
+    expect(emergencyTarget({ spendingCents: 150_000, incomeCents: null })).toEqual({ targetCents: 450_000, months: 3, basis: "spending" });
+    expect(emergencyTarget({ spendingCents: null, incomeCents: 200_000, stability: "low" })?.months).toBe(6);
+    expect(emergencyTarget({ spendingCents: null, incomeCents: null })).toBeNull();
+  });
+
+  it("builds a B3 portfolio for savings in reais", () => {
+    for (const level of [1, 2, 3, 4, 5] as const) {
+      const holdings = buildPortfolio(level, 100_000, true, "br");
+      expect(Math.round(holdings.reduce((s, h) => s + h.weight, 0))).toBe(100);
+      expect(holdings.reduce((s, h) => s + h.monthlyCents, 0)).toBe(100_000);
+      expect(holdings.every((h) => h.symbol.endsWith(".SA"))).toBe(true);
+    }
+    const stats = portfolioStats(buildPortfolio(3, 100_000, false, "br"), "br");
+    expect(stats.real).toBe(true);
+    expect(stats.expectedReturn).toBeGreaterThan(0.03);
+  });
+
+  it("reads OFX files from Brazilian banks", () => {
+    const ofx = `OFXHEADER:100
+DATA:OFXSGML
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261103120000[-3:BRT]<TRNAMT>-45,90<FITID>1<MEMO>PADARIA CENTRAL</STMTTRN>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20261105<TRNAMT>3500.00<FITID>2<NAME>SALARIO</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+    expect(isOfx(ofx)).toBe(true);
+    const parsed = parseOfx(ofx);
+    expect(parsed.error).toBeUndefined();
+    expect(parsed.rows).toEqual([
+      { date: "2026-11-03", description: "PADARIA CENTRAL", amountCents: -4590 },
+      { date: "2026-11-05", description: "SALARIO", amountCents: 350000 },
+    ]);
+  });
+});

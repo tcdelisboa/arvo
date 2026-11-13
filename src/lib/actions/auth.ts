@@ -50,11 +50,14 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   }
 
   const id = randomUUID();
-  await q("INSERT INTO users (id, email, name, password_hash) VALUES ($1, $2, $3, $4)", [
+  // The language they signed up in is the one their emails are written in.
+  const { lang } = await getI18n();
+  await q("INSERT INTO users (id, email, name, password_hash, lang) VALUES ($1, $2, $3, $4, $5)", [
     id,
     email,
     name,
     await hashPassword(password),
+    lang,
   ]);
   await createSession(id);
   redirect("/welcome");

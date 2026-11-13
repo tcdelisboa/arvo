@@ -7,21 +7,23 @@ import { setCompanies, setMonthly } from "@/lib/actions/profile";
 import { todayIso } from "@/lib/format";
 import { monthlyAverages } from "@/lib/spending";
 import { recommendMonthly } from "@/lib/recommend";
-import { buildPortfolio, companiesAllowed, portfolioStats, type Holding } from "@/lib/portfolio";
+import { buildPortfolio, companiesAllowed, portfolioStats, regionFor, type Holding } from "@/lib/portfolio";
 import { PROFILES, scoreRisk } from "@/lib/risk";
 import { Badge, ButtonLink, cx, inputClass, Notice, PageHeader, Panel, PanelHeader } from "@/components/ui";
 import { HoldingsRing } from "@/components/holdings-ring";
 import { Projection } from "@/components/projection";
 import { SubmitButton } from "@/components/submit-button";
 import { Rings } from "@/components/rings";
+import { MonthlyPanel } from "@/components/monthly-panel";
 
 export const generateMetadata = titled(msg("Portfolio"));
 
 // Ring order and colours are fixed per holding so neighbours always stay distinguishable.
-const RING_ORDER = ["world", "small", "gold", "cash", "companies", "bonds"];
+const RING_ORDER = ["world", "small", "brazil", "gold", "cash", "companies", "bonds"];
 const RING_COLOR: Record<string, string> = {
   world: "var(--s1)",
   small: "var(--s3)",
+  brazil: "var(--s3)",
   gold: "var(--s2)",
   cash: "var(--s4)",
   companies: "var(--s7)",
@@ -61,8 +63,9 @@ export default async function PortfolioPage() {
 
   const risk = scoreRisk(profile.answers);
   const info = PROFILES[profile.level];
-  const holdings = buildPortfolio(profile.level, profile.monthlyCents, profile.includeCompanies);
-  const stats = portfolioStats(holdings);
+  const region = regionFor(user.currency);
+  const holdings = buildPortfolio(profile.level, profile.monthlyCents, profile.includeCompanies, region);
+  const stats = portfolioStats(holdings, region);
   const averages = monthlyAverages(txs, todayIso(), 3);
   const hasSpending = averages.months.length > 0 && averages.spending > 0;
   const recommendation = recommendMonthly(
@@ -159,6 +162,17 @@ export default async function PortfolioPage() {
         </Panel>
       </div>
 
+      <div className="mt-5">
+        <MonthlyPanel
+          userId={user.id}
+          currency={user.currency}
+          plannedCents={profile.monthlyCents}
+          spendingCents={hasSpending ? averages.spending : null}
+          incomeCents={profile.answers.monthlyIncome}
+          stability={profile.answers.stability}
+        />
+      </div>
+
       <Panel className="mt-5">
         <PanelHeader
           title={t("Where to put it")}
@@ -222,7 +236,13 @@ export default async function PortfolioPage() {
             </Notice>
           </div>
         ) : null}
-        {user.currency !== "EUR" ? (
+        {region === "br" ? (
+          <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+            <Notice>
+              {t("These funds are listed on B3 and priced in reais, so any Brazilian broker can buy them. If you prefer, Tesouro Selic and Tesouro IPCA+ can also be bought directly on Tesouro Direto instead of the two bond funds.")}
+            </Notice>
+          </div>
+        ) : user.currency !== "EUR" ? (
           <div className="px-5 pb-5 sm:px-6 sm:pb-6">
             <Notice>
               {t("These funds trade in euros on the Xetra exchange. Your broker converts {currency} when you buy. The bond and cash-like funds are built for euro savers, so ask your broker for the {currency} equivalent of those two.", { currency: user.currency })}
@@ -238,6 +258,7 @@ export default async function PortfolioPage() {
             monthlyCents={profile.monthlyCents}
             expectedReturn={stats.expectedReturn}
             volatility={stats.volatility}
+            real={stats.real}
             currency={user.currency}
             defaultYears={YEARS[profile.answers.horizon] ?? 20}
           />

@@ -23,6 +23,7 @@ function English() {
         <li><strong>Investor profile:</strong> your answers to the questionnaire (age, income, time frame, attitude to risk) and the monthly amount you choose.</li>
         <li><strong>Watchlist:</strong> the shares and funds you choose to follow.</li>
         <li><strong>Waitlist:</strong> if you ask to hear when Arvo opens, your email address, what you said you want Arvo for, and which link brought you here. We use it only to tell you about the launch, and delete it when you ask.</li>
+        <li><strong>Monthly summary:</strong> while it is switched on, one email at the start of each month with your own totals from the month before (money in and out, what you logged as invested, your emergency fund). Switch it off in Settings or with the link in the email.</li>
         <li><strong>Plan and use:</strong> which plan you are on, whether you asked to be told when Plus opens, and the dates on which you used Arvo. We use the dates to see whether people come back, not what you looked at.</li>
         <li><strong>Technical data:</strong> one session cookie that keeps you signed in, one cookie that remembers the language you chose, and your IP address in short-lived security logs that limit repeated sign-in attempts.</li>
       </ul>
@@ -41,7 +42,7 @@ function English() {
         <li><strong>Hosting and database</strong> providers that run the service.</li>
         <li><strong>Open banking provider (Plaid)</strong>, only if you choose to connect a bank. You authorise the connection on your bank&apos;s own page; Arvo never sees your banking password, and bank access tokens are stored encrypted.</li>
         <li><strong>AI provider (Anthropic)</strong>, to write savings insights and explanations. We send only aggregated figures such as totals per category and the names of regular merchants. We do not send your name, email, account details or individual transactions.</li>
-        <li><strong>Email provider</strong>, to send password reset emails.</li>
+        <li><strong>Email provider</strong>, to send password reset emails and the monthly summary.</li>
         <li><strong>Market data provider</strong>, which receives the ticker being looked up but nothing about you.</li>
       </ul>
       <p>

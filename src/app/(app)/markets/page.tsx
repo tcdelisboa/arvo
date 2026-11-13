@@ -114,7 +114,7 @@ export default async function MarketsPage() {
                 group === "Funds (ETFs)"
                   ? t("One purchase, many holdings. The usual starting point.")
                   : group === "Brazil"
-                    ? t("Listed on B3 in São Paulo and priced in reais. The first three are funds.")
+                    ? t("Listed on B3 in São Paulo and priced in reais. The first seven are funds.")
                     : undefined
               }
             />

@@ -17,7 +17,7 @@ const IMPORT = (bank: boolean): Start => ({
   value: "import",
   icon: FileSpreadsheet,
   title: bank ? msg("Connect a bank or import a statement") : msg("Import a bank statement"),
-  text: msg("Download a statement from your bank, as CSV or PDF, and upload it here. Takes two minutes, and Arvo never sees your bank login."),
+  text: msg("Download a statement from your bank (CSV, OFX, Excel or PDF) and upload it here. Takes two minutes, and Arvo never sees your bank login."),
 });
 const INVEST: Start = {
   value: "invest",

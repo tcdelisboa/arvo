@@ -150,7 +150,118 @@ export const INSTRUMENTS: Record<string, Instrument> = {
   },
 };
 
+/**
+ * The same building blocks for someone saving in reais: funds listed on B3
+ * and priced in BRL, with Tesouro Selic and Tesouro IPCA+ in the safe part.
+ */
+export const INSTRUMENTS_BR: Record<string, Instrument> = {
+  world: {
+    symbol: "WRLD11.SA",
+    ticker: "WRLD11",
+    name: "Investo FTSE Global Equities ETF",
+    short: msg("Global stocks"),
+    kind: "ETF",
+    assetClass: "stocks",
+    what: msg("A fund on B3 that follows thousands of companies across developed and emerging countries, priced in reais."),
+    why: msg("It spreads your money around the world, so your savings do not depend only on Brazil's economy and the real."),
+    watch: msg("It moves with world stock markets and with the dollar. When the real gets stronger it can fall even if markets are flat."),
+  },
+  brazil: {
+    symbol: "BOVA11.SA",
+    ticker: "BOVA11",
+    name: "iShares Ibovespa Fundo de Índice",
+    short: msg("Brazilian stocks"),
+    kind: "ETF",
+    assetClass: "stocks",
+    what: msg("The Ibovespa in one fund: the largest companies listed on B3."),
+    why: msg("It gives you a share of the economy you know best, at a low cost."),
+    watch: msg("Brazilian shares swing a lot and depend heavily on a few sectors, such as banks, commodities and Petrobras."),
+  },
+  bonds: {
+    symbol: "B5P211.SA",
+    ticker: "B5P211",
+    name: "It Now IMA-B5 P2 Fundo de Índice",
+    short: msg("Inflation-linked bonds"),
+    kind: "ETF",
+    assetClass: "bonds",
+    what: msg("Tesouro IPCA+ bonds that mature within about five years, in one fund. They pay inflation plus a fixed rate."),
+    why: msg("They protect your money from inflation and usually move far less than shares, which makes the whole plan easier to hold."),
+    watch: msg("Their price dips for a while when interest rates rise. You can also buy Tesouro IPCA+ directly on Tesouro Direto."),
+  },
+  cash: {
+    symbol: "LFTS11.SA",
+    ticker: "LFTS11",
+    name: "Investo Teva Tesouro Selic ETF",
+    short: msg("Cash-like"),
+    kind: "ETF",
+    assetClass: "cash",
+    what: msg("A fund that holds Tesouro Selic, which earns roughly the Selic rate set by the Central Bank."),
+    why: msg("It is the steadiest part of the plan and a good home for money you may need soon."),
+    watch: msg("It grows little after inflation when the Selic is low. Tesouro Selic bought on Tesouro Direto does the same job."),
+  },
+  gold: {
+    symbol: "GOLD11.SA",
+    ticker: "GOLD11",
+    name: "Trend ETF LBMA Ouro",
+    short: msg("Gold"),
+    kind: "ETF",
+    assetClass: "gold",
+    what: msg("A fund on B3 that follows the international price of gold, converted into reais."),
+    why: msg("Gold often holds its value when shares and the real fall together, so a small amount steadies the plan."),
+    watch: msg("It pays no interest or dividends and its price can drift for years. Keep it small."),
+  },
+  wege: {
+    symbol: "WEGE3.SA",
+    ticker: "WEGE3",
+    name: "WEG",
+    short: msg("Industrial equipment"),
+    kind: "Stock",
+    assetClass: "companies",
+    what: msg("Brazilian maker of electric motors and power equipment, sold in more than 100 countries."),
+    why: msg("A long record of steady growth, with a large share of its sales abroad."),
+    watch: msg("Its shares are often priced for a lot of growth; disappointment is punished quickly."),
+  },
+  itub: {
+    symbol: "ITUB4.SA",
+    ticker: "ITUB4",
+    name: "Itaú Unibanco",
+    short: msg("Banking"),
+    kind: "Stock",
+    assetClass: "companies",
+    what: msg("The largest private bank in Brazil."),
+    why: msg("Consistently profitable, and it pays regular dividends."),
+    watch: msg("Banks suffer when the economy slows and more loans go unpaid."),
+  },
+  vale: {
+    symbol: "VALE3.SA",
+    ticker: "VALE3",
+    name: "Vale",
+    short: msg("Mining"),
+    kind: "Stock",
+    assetClass: "companies",
+    what: msg("One of the world's largest producers of iron ore."),
+    why: msg("It earns in dollars and pays large dividends when prices are high."),
+    watch: msg("Its profits follow the price of iron ore and demand from China."),
+  },
+  abev: {
+    symbol: "ABEV3.SA",
+    ticker: "ABEV3",
+    name: "Ambev",
+    short: msg("Drinks"),
+    kind: "Stock",
+    assetClass: "companies",
+    what: msg("The brewer behind Skol, Brahma and Antarctica."),
+    why: msg("People keep buying its products even in hard times."),
+    watch: msg("Growth has been slow and competition is rising."),
+  },
+};
+
+/** Which set of funds fits where the person saves. */
+export type Region = "eu" | "br";
+export const regionFor = (currency: string): Region => (currency === "BRL" ? "br" : "eu");
+
 const COMPANY_KEYS = ["msft", "asml", "visa", "lvmh", "sanofi"] as const;
+const COMPANY_KEYS_BR = ["wege", "itub", "vale", "abev"] as const;
 
 /** Share of the whole plan, in percent, by building block. */
 export const MIXES: Record<Level, { stocks: number; bonds: number; cash: number; gold: number }> = {
@@ -181,7 +292,10 @@ function allocate(totalCents: number, weights: number[]): number[] {
   return floors;
 }
 
-export function buildPortfolio(level: Level, monthlyCents: number, includeCompanies: boolean): Holding[] {
+export function buildPortfolio(level: Level, monthlyCents: number, includeCompanies: boolean, region: Region = "eu"): Holding[] {
+  const br = region === "br";
+  const instruments = br ? INSTRUMENTS_BR : INSTRUMENTS;
+  const companyKeys: readonly string[] = br ? COMPANY_KEYS_BR : COMPANY_KEYS;
   const mix = MIXES[level];
   const parts: { key: string; weight: number }[] = [];
 
@@ -189,20 +303,27 @@ export function buildPortfolio(level: Level, monthlyCents: number, includeCompan
   // Individual companies only make sense once the plan can carry the extra risk.
   const companies = includeCompanies && level >= 3 ? (level === 3 ? 5 : level === 4 ? 10 : 15) : 0;
   stocks -= companies;
-  const small = level >= 4 ? Math.round(stocks * 0.12) : 0;
-  parts.push({ key: "world", weight: stocks - small });
-  if (small) parts.push({ key: "small", weight: small });
+  if (br) {
+    // About a third at home, the rest around the world.
+    const brazil = Math.round(stocks * 0.35);
+    parts.push({ key: "world", weight: stocks - brazil });
+    if (brazil) parts.push({ key: "brazil", weight: brazil });
+  } else {
+    const small = level >= 4 ? Math.round(stocks * 0.12) : 0;
+    parts.push({ key: "world", weight: stocks - small });
+    if (small) parts.push({ key: "small", weight: small });
+  }
   if (mix.bonds) parts.push({ key: "bonds", weight: mix.bonds });
   if (mix.cash) parts.push({ key: "cash", weight: mix.cash });
   if (mix.gold) parts.push({ key: "gold", weight: mix.gold });
   if (companies) {
-    const each = companies / COMPANY_KEYS.length;
-    for (const key of COMPANY_KEYS) parts.push({ key, weight: each });
+    const each = companies / companyKeys.length;
+    for (const key of companyKeys) parts.push({ key, weight: each });
   }
 
   const amounts = allocate(monthlyCents, parts.map((p) => p.weight));
   return parts.map((part, index) => ({
-    ...INSTRUMENTS[part.key],
+    ...instruments[part.key],
     key: part.key,
     weight: part.weight,
     monthlyCents: amounts[index],
@@ -223,6 +344,19 @@ const ASSUMPTIONS: Record<AssetClass, { ret: number; vol: number }> = {
   bonds: { ret: 0.03, vol: 0.05 },
   cash: { ret: 0.02, vol: 0.005 },
   gold: { ret: 0.035, vol: 0.15 },
+};
+
+/**
+ * For savings in reais the figures are after inflation: Brazilian rates and
+ * inflation are high enough that nominal numbers would look far rosier than
+ * what the money can actually buy.
+ */
+const ASSUMPTIONS_BR: Record<AssetClass, { ret: number; vol: number }> = {
+  stocks: { ret: 0.06, vol: 0.2 },
+  companies: { ret: 0.06, vol: 0.28 },
+  bonds: { ret: 0.05, vol: 0.04 },
+  cash: { ret: 0.045, vol: 0.01 },
+  gold: { ret: 0.02, vol: 0.17 },
 };
 
 const CORRELATION: Record<string, number> = {
@@ -247,17 +381,20 @@ export type PortfolioStats = {
   /** A rough bad year: two standard deviations below the expected return. */
   badYear: number;
   byClass: { assetClass: AssetClass; weight: number }[];
+  /** True when the returns are after inflation (savings in reais). */
+  real: boolean;
 };
 
-export function portfolioStats(holdings: Holding[]): PortfolioStats {
+export function portfolioStats(holdings: Holding[], region: Region = "eu"): PortfolioStats {
+  const assumptions = region === "br" ? ASSUMPTIONS_BR : ASSUMPTIONS;
   const classes = new Map<AssetClass, number>();
   for (const h of holdings) classes.set(h.assetClass, (classes.get(h.assetClass) ?? 0) + h.weight / 100);
   const entries = [...classes.entries()];
-  const expectedReturn = entries.reduce((sum, [c, w]) => sum + w * ASSUMPTIONS[c].ret, 0);
+  const expectedReturn = entries.reduce((sum, [c, w]) => sum + w * assumptions[c].ret, 0);
   let variance = 0;
   for (const [a, wa] of entries) {
     for (const [b, wb] of entries) {
-      variance += wa * wb * ASSUMPTIONS[a].vol * ASSUMPTIONS[b].vol * corr(a, b);
+      variance += wa * wb * assumptions[a].vol * assumptions[b].vol * corr(a, b);
     }
   }
   const volatility = Math.sqrt(variance);
@@ -266,6 +403,7 @@ export function portfolioStats(holdings: Holding[]): PortfolioStats {
     volatility,
     badYear: expectedReturn - 2 * volatility,
     byClass: entries.map(([assetClass, weight]) => ({ assetClass, weight: weight * 100 })),
+    real: region === "br",
   };
 }
 
