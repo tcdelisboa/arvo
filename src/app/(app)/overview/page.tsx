@@ -17,6 +17,7 @@ import { CategoryBars } from "@/components/category-bars";
 import { PlanBar } from "@/components/plan-bar";
 import { SubmitButton } from "@/components/submit-button";
 import { MonthlyPanel } from "@/components/monthly-panel";
+import { GoalsPanel } from "@/components/goals-panel";
 
 export const generateMetadata = titled(msg("Overview"));
 
@@ -78,6 +79,9 @@ export default async function OverviewPage() {
               <FileSpreadsheet size={15} /> {t("A CSV, OFX, Excel or PDF statement from any bank works.")}
             </p>
           </Panel>
+        </div>
+        <div className="mt-5">
+          <GoalsPanel userId={user.id} currency={user.currency} />
         </div>
         {profile ? (
           <div className="mt-5">
@@ -157,6 +161,10 @@ export default async function OverviewPage() {
           incomeCents={profile?.answers.monthlyIncome ?? (averages.income > 0 ? averages.income : null)}
           stability={profile?.answers.stability ?? null}
         />
+      </div>
+
+      <div className="mt-5">
+        <GoalsPanel userId={user.id} currency={user.currency} />
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_1fr]">

@@ -23,6 +23,7 @@ function English() {
         <li><strong>Investor profile:</strong> your answers to the questionnaire (age, income, time frame, attitude to risk) and the monthly amount you choose.</li>
         <li><strong>Watchlist:</strong> the shares and funds you choose to follow.</li>
         <li><strong>Waitlist:</strong> if you ask to hear when Arvo opens, your email address, what you said you want Arvo for, and which link brought you here. We use it only to tell you about the launch, and delete it when you ask.</li>
+        <li><strong>Goals and progress:</strong> the savings goals you set (what for, how much, by when), what you log as put towards them or invested each month, and how much you have in your emergency fund.</li>
         <li><strong>Monthly summary:</strong> while it is switched on, one email at the start of each month with your own totals from the month before (money in and out, what you logged as invested, your emergency fund). Switch it off in Settings or with the link in the email.</li>
         <li><strong>Plan and use:</strong> which plan you are on, whether you asked to be told when Plus opens, and the dates on which you used Arvo. We use the dates to see whether people come back, not what you looked at.</li>
         <li><strong>Technical data:</strong> one session cookie that keeps you signed in, one cookie that remembers the language you chose, and your IP address in short-lived security logs that limit repeated sign-in attempts.</li>

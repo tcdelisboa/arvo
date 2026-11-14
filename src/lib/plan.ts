@@ -13,6 +13,9 @@ export const PLUS_PRICE = "€5";
 /** Free shows the month in progress plus this many full months before it. */
 export const FREE_HISTORY_MONTHS = 3;
 
+/** Free accounts keep one savings goal open at a time. */
+export const FREE_GOALS = 1;
+
 export function isPlan(value: unknown): value is Plan {
   return value === "free" || value === "plus";
 }
@@ -28,11 +31,13 @@ export const FREE_FEATURES = [
   msg("The last {n} months of history"),
   msg("Investor profile and model portfolio"),
   msg("Markets, with a fit rating for your profile"),
+  msg("One savings goal, with how long it takes at your current pace"),
 ];
 
 export const PLUS_FEATURES = [
   msg("Every way to save Arvo finds, with the amount each is worth"),
   msg("Your full history, however far back it goes"),
+  msg("As many savings goals as you like, with the exact cuts that get you there faster"),
   msg("Export to Excel"),
   msg("Everything in Free"),
 ];

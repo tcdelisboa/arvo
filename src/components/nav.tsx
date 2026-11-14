@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePlus, ChartPie, House, Landmark, ReceiptText, Settings, ShieldCheck, TrendingUp, type LucideIcon } from "lucide-react";
+import { BadgePlus, ChartPie, Goal, House, Landmark, ReceiptText, Settings, ShieldCheck, TrendingUp, type LucideIcon } from "lucide-react";
 import { cx } from "./ui";
 import { useI18n } from "./i18n";
 import { msg } from "@/lib/i18n/core";
@@ -12,10 +12,12 @@ type Item = { href: string; label: string; icon: LucideIcon; mobile?: boolean };
 const ITEMS: Item[] = [
   { href: "/overview", label: msg("Overview"), icon: House, mobile: true },
   { href: "/spending", label: msg("Spending"), icon: ReceiptText, mobile: true },
+  { href: "/goals", label: msg("Goals"), icon: Goal, mobile: true },
   { href: "/portfolio", label: msg("Portfolio"), icon: ChartPie, mobile: true },
   { href: "/markets", label: msg("Markets"), icon: TrendingUp, mobile: true },
   { href: "/accounts", label: msg("Accounts"), icon: Landmark },
-  { href: "/settings", label: msg("Settings"), icon: Settings, mobile: true },
+  // On phones, Settings sits in the top bar so the tab bar keeps five items.
+  { href: "/settings", label: msg("Settings"), icon: Settings },
 ];
 
 const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);

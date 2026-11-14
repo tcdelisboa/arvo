@@ -412,3 +412,59 @@ DATA:OFXSGML
     ]);
   });
 });
+
+describe("savings goals", async () => {
+  const { goalPaths, monthsTo, monthlyNeeded, keepFor, monthAfter, monthsBetween } = await import("@/lib/savings-goals");
+
+  it("counts months with and without a return", () => {
+    expect(monthsTo(120_000, 0, 10_000, 0)).toBe(12);
+    expect(monthsTo(1_200_000, 0, 10_000, 0.05)).toBeLessThan(120);
+    expect(monthsTo(100_000, 100_000, 0, 0)).toBe(0);
+    expect(monthsTo(100_000, 0, 0, 0)).toBeNull();
+  });
+
+  it("works out the monthly amount for a date, and back again", () => {
+    const need = monthlyNeeded(800_000, 100_000, 18, 0.045);
+    expect(monthsTo(800_000, 100_000, need, 0.045)).toBe(18);
+    expect(monthlyNeeded(120_000, 0, 12, 0)).toBe(10_000);
+  });
+
+  it("makes three paths that get faster", () => {
+    const paths = goalPaths({
+      targetCents: 800_000,
+      savedCents: 0,
+      availableCents: 40_000,
+      ideas: [
+        { title: "Subscriptions", cents: 8_000 },
+        { title: "Eating out", cents: 15_000 },
+        { title: "Small purchases", cents: 5_000 },
+      ],
+      flexibleCents: 120_000,
+      region: "br",
+    });
+    expect(paths.map((p) => p.key)).toEqual(["light", "balanced", "radical"]);
+    expect(paths[0].monthlyCents).toBe(40_000);
+    expect(paths[1].monthlyCents).toBe(55_000);
+    expect(paths[1].cuts.map((c) => c.title)).toEqual(["Eating out"]);
+    expect(paths[2].monthlyCents).toBe(40_000 + 28_000 + Math.round(0.15 * (120_000 - 28_000)));
+    expect(paths[0].months!).toBeGreaterThan(paths[1].months!);
+    expect(paths[1].months!).toBeGreaterThan(paths[2].months!);
+  });
+
+  it("uses the stated amount when there are no transactions, and never a negative one", () => {
+    expect(goalPaths({ targetCents: 100_000, savedCents: 0, availableCents: null, statedMonthlyCents: 10_000, ideas: [], flexibleCents: 0, region: "eu" })[0].monthlyCents).toBe(10_000);
+    expect(goalPaths({ targetCents: 100_000, savedCents: 0, availableCents: -5_000, ideas: [], flexibleCents: 0, region: "eu" })[0].months).toBeNull();
+  });
+
+  it("keeps short goals out of shares", () => {
+    expect(keepFor(10)).toBe("cash");
+    expect(keepFor(36)).toBe("bonds");
+    expect(keepFor(90)).toBe("mixed");
+    expect(keepFor(null)).toBe("cash");
+  });
+
+  it("does month arithmetic", () => {
+    expect(monthAfter("2026-11", 3)).toBe("2027-02");
+    expect(monthsBetween("2026-11", "2028-01")).toBe(14);
+  });
+});

@@ -136,6 +136,28 @@ CREATE TABLE IF NOT EXISTS contributions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS contributions_user ON contributions (user_id, ym);
+CREATE TABLE IF NOT EXISTS goals (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  name TEXT NOT NULL,
+  target_cents BIGINT NOT NULL,
+  saved_cents BIGINT NOT NULL DEFAULT 0,
+  target_ym TEXT,
+  path TEXT,
+  monthly_cents INTEGER,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  done_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS goals_user ON goals (user_id);
+CREATE TABLE IF NOT EXISTS goal_deposits (
+  id TEXT PRIMARY KEY,
+  goal_id TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount_cents INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS goal_deposits_goal ON goal_deposits (goal_id, created_at);
 CREATE TABLE IF NOT EXISTS monthly_emails (
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   ym TEXT NOT NULL,

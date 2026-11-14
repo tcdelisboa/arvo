@@ -8,6 +8,7 @@ import { universe } from "./universe";
 import { brazil } from "./brazil";
 import { habit } from "./habit";
 import { importing } from "./importing";
+import { goals } from "./goals";
 
 /** Brazilian Portuguese, keyed by the English text. Missing keys fall back to English. */
-export const pt: Record<string, string> = { ...site, ...auth, ...app, ...money, ...pages, ...more, ...universe, ...brazil, ...habit, ...importing };
+export const pt: Record<string, string> = { ...site, ...auth, ...app, ...money, ...pages, ...more, ...universe, ...brazil, ...habit, ...importing, ...goals };

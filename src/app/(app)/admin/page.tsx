@@ -76,13 +76,15 @@ export default async function AdminPage() {
     ]);
 
   // The funnel: each step counts people who also reached it, out of everyone who signed up.
-  const [started, logged, cohorts, prices] = await Promise.all([
+  const [started, logged, goalsSet, cohorts, prices] = await Promise.all([
     count(
       `SELECT count(*)::int AS n FROM users u
         WHERE EXISTS (SELECT 1 FROM accounts a WHERE a.user_id = u.id)
-           OR EXISTS (SELECT 1 FROM investor_profiles p WHERE p.user_id = u.id)`,
+           OR EXISTS (SELECT 1 FROM investor_profiles p WHERE p.user_id = u.id)
+           OR EXISTS (SELECT 1 FROM goals g WHERE g.user_id = u.id)`,
     ),
     count("SELECT count(DISTINCT user_id)::int AS n FROM contributions"),
+    count("SELECT count(DISTINCT user_id)::int AS n FROM goals"),
     q<{ week: string; signups: number; imported: number; profiled: number; logged: number; back: number }>(
       `SELECT to_char(date_trunc('week', u.created_at), 'YYYY-MM-DD') AS week,
               count(*)::int AS signups,
@@ -101,9 +103,10 @@ export default async function AdminPage() {
   ]);
   const funnel: [string, number, string][] = [
     ["Signed up", total, "Everyone with an account"],
-    ["Got started", started, "Imported something, loaded the sample or answered the investor questions"],
+    ["Got started", started, "Imported something, loaded the sample, answered the investor questions or set a goal"],
     ["Imported their own statement", imported, "A real CSV, OFX, Excel or PDF statement"],
     ["Finished the investor profile", profiled, "All ten questions"],
+    ["Set a savings goal", goalsSet, "A car, a trip, a home..."],
     ["Logged an investment", logged, "Used the monthly tracker at least once"],
     ["Came back a week later", backAfterWeek, "Used Arvo 7 or more days after signing up"],
   ];

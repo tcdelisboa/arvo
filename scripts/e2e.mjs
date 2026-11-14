@@ -344,6 +344,24 @@ async function run(label, viewport) {
   const cron = await page.evaluate(async () => (await fetch("/api/cron/monthly", { method: "POST" })).status);
   cron === 401 || cron === 503 ? ok("monthly email endpoint refuses unsigned calls") : note(`[${label}] cron endpoint status: ${cron}`);
 
+  // A savings goal: three paths, pick one, put money in, see it on the overview.
+  await go("/goals");
+  await expectText("Set your first goal", "goals page invites a first goal");
+  await page.click('input[name="kind"][value="trip"]');
+  await page.type("#goal-target", "2400");
+  await page.type("#goal-saved", "300");
+  await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }).catch(() => {}), clickText("See how to get there", "button")]);
+  await expectText("Three ways to get there", "goal shows three paths");
+  await expectText("Where to keep this money", "goal says where to keep the money");
+  await clickText("Choose this path", "button");
+  await expectText("Your path", "a path can be chosen");
+  await page.type('input[name="amount"][id^="deposit-"]', "100");
+  await clickText("Add", "form button");
+  await page.waitForFunction(() => document.body.innerText.includes("Undo the last one"), { timeout: 10000 }).then(() => ok("money can be put towards a goal"), () => note(`[${label}] goal deposit did not show`));
+  await shot("16c-goals", true);
+  await go("/overview");
+  await expectText("Your goals", "overview lists goals");
+
   // Saving in reais switches the plan to funds listed on B3.
   await go("/settings");
   await page.select("#currency", "BRL");

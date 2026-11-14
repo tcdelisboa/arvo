@@ -8,6 +8,9 @@ import { categoryLabel } from "./categories";
 import { emergencyTarget } from "./progress";
 import { addMonths, categoryTotals, monthlyAverages, summarizeMonths } from "./spending";
 import { contributionTotals, getTracking } from "./tracking";
+import { listGoals } from "./goals-data";
+import { regionFor } from "./portfolio";
+import { monthAfter, monthsAt } from "./savings-goals";
 import { appUrl } from "./url";
 
 export type MonthlyEmail = { to: string; subject: string; text: string; unsubscribe: string };
@@ -40,7 +43,7 @@ export async function monthlyEmail(userId: string, ym: string): Promise<MonthlyE
   ]);
   const month = f.month(ym, "long");
   const summary = summarizeMonths(txs).find((m) => m.ym === ym);
-  if (!summary && !profile) return null;
+  if (!summary && !profile && !(await listGoals(userId)).some((g) => !g.done)) return null;
 
   const lines: string[] = [];
   if (summary && (summary.income > 0 || summary.spending > 0)) {
@@ -78,6 +81,22 @@ export async function monthlyEmail(userId: string, ym: string): Promise<MonthlyE
         target: fmt(target.targetCents),
         share: f.percent(Math.min(100, (tracking.emergencyCents / target.targetCents) * 100), 0),
       }),
+    );
+  }
+
+  const goals = (await listGoals(userId)).filter((g) => !g.done);
+  const now = addMonths(ym, 1);
+  for (const goal of goals.slice(0, 3)) {
+    const months = goal.monthlyCents != null ? monthsAt(goal.targetCents, goal.savedCents, goal.monthlyCents, regionFor(user.currency)) : null;
+    lines.push(
+      months !== null && months > 0
+        ? t("{goal}: {saved} of {target}, on track for {month}", {
+            goal: goal.name,
+            saved: fmt(goal.savedCents),
+            target: fmt(goal.targetCents),
+            month: f.month(monthAfter(now, months), "long"),
+          })
+        : t("{goal}: {saved} of {target}", { goal: goal.name, saved: fmt(goal.savedCents), target: fmt(goal.targetCents) }),
     );
   }
 

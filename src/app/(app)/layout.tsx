@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { logout } from "@/lib/actions/auth";
 import { Logo } from "@/components/logo";
@@ -52,6 +52,13 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <div className="flex items-center gap-1">
             <LangSwitch />
             <ThemeToggle />
+            <Link
+              href="/settings"
+              aria-label={t("Settings")}
+              className="flex h-9 w-9 items-center justify-center rounded-control text-ink-2 hover:bg-sunken hover:text-ink"
+            >
+              <Settings size={18} />
+            </Link>
           </div>
         </header>
         <main id="main" className="settle mx-auto w-full max-w-[1100px] px-4 pb-28 pt-6 sm:px-8 sm:pt-10 lg:pb-16">

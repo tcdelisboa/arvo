@@ -18,6 +18,7 @@ export function Portuguese() {
         <li><strong>Perfil de investidor:</strong> suas respostas ao questionário (idade, renda, prazo, atitude diante do risco) e o valor mensal que você escolher.</li>
         <li><strong>Lista de acompanhamento:</strong> as ações e fundos que você escolhe seguir.</li>
         <li><strong>Lista de espera:</strong> se você pedir para saber quando a Arvo abrir, seu e-mail, para que você disse que quer a Arvo e qual link trouxe você até aqui. Usamos isso só para avisar sobre o lançamento e apagamos quando você pedir.</li>
+        <li><strong>Metas e progresso:</strong> as metas que você cria (para quê, quanto, até quando), o que você registra como guardado para elas ou investido a cada mês, e quanto tem na reserva de emergência.</li>
         <li><strong>Resumo mensal:</strong> enquanto estiver ligado, um e-mail no começo de cada mês com os seus próprios totais do mês anterior (o que entrou e saiu, o que você registrou como investido e sua reserva de emergência). Desligue em Ajustes ou pelo link no e-mail.</li>
         <li><strong>Plano e uso:</strong> em qual plano você está, se pediu para ser avisado quando o Plus abrir e os dias em que usou a Arvo. Usamos os dias para ver se as pessoas voltam, não o que você olhou.</li>
         <li><strong>Dados técnicos:</strong> um cookie de sessão que mantém você conectado, um cookie com o idioma que você escolheu, e seu endereço IP em registros de segurança de curta duração que limitam tentativas repetidas de login.</li>

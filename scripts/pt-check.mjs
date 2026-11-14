@@ -31,6 +31,13 @@ await page.click("main button"); // first goal
 await new Promise((r) => setTimeout(r, 300));
 await page.screenshot({ path: `${OUT}/welcome2.png`, fullPage: true });
 await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }), page.click('button[value="sample"]')]);
+await page.goto(BASE + "/goals", { waitUntil: "networkidle0" });
+await page.click('input[name="kind"][value="car"]');
+await page.type("#goal-target", "40000");
+await page.type("#goal-saved", "5000");
+await page.$eval("#goal-date", (el) => { el.value = "2028-12"; });
+await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }).catch(() => {}), page.click("main form button[type=submit]")]);
+await visit("/goals", "goals");
 await visit("/overview", "overview");
 await visit("/spending", "spending");
 await visit("/portfolio/profile", "profile", false);
@@ -52,5 +59,6 @@ await page.evaluate(() => [...document.querySelectorAll('button[name="lang"][val
 await new Promise((r) => setTimeout(r, 1200));
 report.push("after PT switch, h1: " + (await page.$eval("h1", (h) => h.textContent)));
 await visit("/overview", "overview-mobile", false);
+await visit("/goals", "goals-mobile", false);
 console.log(report.join("\n\n"));
 await browser.close();
